@@ -15,7 +15,7 @@ function RuleEditor() {
   const [editingId, setEditingId] = useState(null);
   const [message, setMessage] = useState("");
 
-  const api = "http://localhost:5000/api";
+  const api = "https://flowpilot-workflow-automation.onrender.com";
 
   const loadRules = async () => {
     try {

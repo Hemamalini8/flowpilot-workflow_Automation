@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../styles/Dashboard.css";
 import "../styles/Components.css";
@@ -7,15 +7,17 @@ import "../styles/Components.css";
 function WorkflowList() {
   const [workflows, setWorkflows] = useState([]);
   const [search, setSearch] = useState("");
+  const [message, setMessage] = useState("");
+  const navigate = useNavigate();
 
-  const api = "http://localhost:5000/api";
-
+  const api = "https://flowpilot-workflow-automation.onrender.com";
   const loadWorkflows = async () => {
     try {
       const res = await axios.get(`${api}/workflows`);
       setWorkflows(res.data);
     } catch (error) {
       console.log("Error loading workflows:", error);
+      setMessage("Failed to load workflows");
     }
   };
 
@@ -24,13 +26,13 @@ function WorkflowList() {
   }, []);
 
   const filteredWorkflows = workflows.filter((workflow) =>
-    workflow.name.toLowerCase().includes(search.toLowerCase()),
+    workflow.name?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <div className="dashboard-page">
       <div className="container">
-        <section className="hero">
+        <section className="hero" style={{ maxWidth: "980px", margin: "0 auto 20px auto" }}>
           <div className="hero-left">
             <p className="mini-title">Workflow List</p>
             <h1>Manage all workflows from one place.</h1>
@@ -41,12 +43,17 @@ function WorkflowList() {
           </div>
         </section>
 
-        <div className="card">
+        {message && <div className="message-box">{message}</div>}
+
+        <div className="card workflow-list-card" style={{ maxWidth: "980px", margin: "0 auto" }}>
           <div className="section-header">
             <h2>All Workflows</h2>
-            <Link to="/workflow-editor" className="primary-btn">
+            <button
+              className="refresh-btn"
+              onClick={() => navigate("/workflow-editor")}
+            >
               Create Workflow
-            </Link>
+            </button>
           </div>
 
           <input
@@ -54,10 +61,11 @@ function WorkflowList() {
             placeholder="Search workflow by name"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            style={{ marginBottom: "20px" }}
           />
 
-          <div style={{ overflowX: "auto", marginTop: "18px" }}>
-            <table className="audit-table">
+          <div className="workflow-table-wrapper">
+            <table className="workflow-table">
               <thead>
                 <tr>
                   <th>ID</th>
@@ -68,41 +76,65 @@ function WorkflowList() {
                   <th>Actions</th>
                 </tr>
               </thead>
-              <tbody>
-                {filteredWorkflows.map((workflow) => (
-                  <tr key={workflow._id}>
-                    <td>{workflow._id}</td>
-                    <td>{workflow.name}</td>
-                    <td>{workflow.steps?.length || 0}</td>
-                    <td>{workflow.version}</td>
-                    <td>{workflow.is_active ? "Active" : "Inactive"}</td>
-                    <td>
-                      <Link
-                        to={`/workflow-editor/${workflow._id}`}
-                        className="table-link-btn"
-                        style={{ marginRight: "8px" }}
-                      >
-                        Edit
-                      </Link>
 
-                      <Link
-                        to={`/workflow-steps/${workflow._id}`}
-                        className="table-link-btn"
-                        style={{ background: "#10b981" }}
-                      >
-                        Steps
-                      </Link>
+              <tbody>
+                {filteredWorkflows.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="empty-row">
+                      No workflows found.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filteredWorkflows.map((workflow) => (
+                    <tr key={workflow._id}>
+                      <td className="workflow-id-cell">
+                        <span className="workflow-id-badge">
+                          {workflow._id.slice(-6)}
+                        </span>
+                      </td>
+
+                      <td className="workflow-name-cell">{workflow.name}</td>
+
+                      <td>
+                        <span className="count-badge">
+                          {workflow.steps?.length || 0}
+                        </span>
+                      </td>
+
+                      <td>
+                        <span className="version-badge">
+                          v{workflow.version || 1}
+                        </span>
+                      </td>
+
+                      <td>
+                        <span className={`status ${workflow.is_active ? "completed" : "rejected"}`}>
+                          {workflow.is_active ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+
+                      <td>
+                        <div className="workflow-action-group">
+                          <button
+                            className="edit-btn workflow-action-btn"
+                            onClick={() => navigate(`/workflow-editor/${workflow._id}`)}
+                          >
+                            Edit
+                          </button>
+
+                          <button
+                            className="step-btn workflow-action-btn"
+                            onClick={() => navigate(`/steps/${workflow._id}`)}
+                          >
+                            Steps
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
-
-            {filteredWorkflows.length === 0 && (
-              <p className="empty-text" style={{ marginTop: "16px" }}>
-                No workflows found.
-              </p>
-            )}
           </div>
         </div>
       </div>

@@ -326,3 +326,265 @@ input:focus {
     flex-direction: column;
   }
 }
+.edit-btn {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.edit-btn:hover {
+  opacity: 0.9;
+}
+.reject-btn {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+
+  width: auto;          /* FIX */
+  display: inline-block; /* FIX */
+  padding: 8px 14px;
+  border-radius: 8px;
+}
+
+.reject-btn:hover {
+  opacity: 0.9;
+}
+.step-input-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  align-items: center;
+}
+
+.step-input {
+  flex: 1;
+}
+
+.step-section-title {
+  margin-bottom: 12px;
+}
+
+.step-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.step-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid #1f2a44;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.step-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.step-number {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.15);
+  color: #7db7ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.step-text {
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 500;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+.step-remove-btn {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 8px 14px;
+  min-width: 95px;
+  width: auto;
+  flex-shrink: 0;
+}
+
+.step-remove-btn:hover {
+  opacity: 0.9;
+}
+
+.edit-btn {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 10px 16px;
+  min-width: 90px;
+}
+.workflow-list-card {
+  overflow: hidden;
+}
+
+.workflow-table-wrapper {
+  overflow-x: auto;
+  border-radius: 14px;
+}
+
+.workflow-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+.workflow-table th {
+  text-align: left;
+  padding: 14px 16px;
+  color: #38bdf8;
+  font-size: 0.95rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+  white-space: nowrap;
+}
+
+.workflow-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  color: #f8fafc;
+  vertical-align: middle;
+}
+
+.workflow-table tr:hover {
+  background: rgba(30, 41, 59, 0.4);
+}
+
+.workflow-id-cell {
+  min-width: 90px;
+}
+
+.workflow-id-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(59, 130, 246, 0.12);
+  color: #93c5fd;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.workflow-name-cell {
+  font-weight: 600;
+  min-width: 160px;
+}
+
+.count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+.version-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  height: 30px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.14);
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0 10px;
+}
+
+.workflow-action-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.workflow-action-btn {
+  min-width: 78px;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+.step-btn {
+  background: linear-gradient(135deg, #10b981, #22c55e);
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+.step-btn:hover {
+  opacity: 0.9;
+}
+
+.empty-row {
+  text-align: center;
+  color: #94a3b8;
+  padding: 20px !important;
+}
+.audit-log-card {
+  overflow: hidden;
+}
+
+.audit-clean-table {
+  min-width: 920px;
+}
+
+.audit-clean-table th,
+.audit-clean-table td {
+  padding: 14px 16px;
+  vertical-align: middle;
+}
+
+.audit-clean-table th {
+  white-space: nowrap;
+}
+
+.audit-id-cell {
+  min-width: 110px;
+}
+
+.audit-text-cell {
+  min-width: 150px;
+  max-width: 190px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.audit-clean-table tbody tr:hover {
+  background: rgba(30, 41, 59, 0.42);
+}

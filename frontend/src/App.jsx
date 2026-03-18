@@ -7,6 +7,7 @@ import WorkflowList from "./pages/workflowList";
 import WorkflowEditor from "./pages/workflowEditor";
 import StepManager from "./pages/stepManger";
 import RuleEditor from "./pages/ruleEditor";
+
 function App() {
   return (
     <BrowserRouter>
@@ -17,8 +18,8 @@ function App() {
         <Route path="/audit-log" element={<AuditLog />} />
         <Route path="/workflows" element={<WorkflowList />} />
         <Route path="/workflow-editor" element={<WorkflowEditor />} />
-        <Route path="/workflow-editor/:id" element={<WorkflowEditor />} /> 
-        <Route path="/workflow-steps/:workflowId" element={<StepManager />} />
+        <Route path="/workflow-editor/:id" element={<WorkflowEditor />} />
+        <Route path="/steps/:id" element={<StepManager />} />
         <Route path="/workflow-rules/:workflowId/:stepId" element={<RuleEditor />} />
       </Routes>
     </BrowserRouter>

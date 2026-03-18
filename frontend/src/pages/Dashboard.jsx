@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import WorkflowCard from "../components/workflowCard";
-import ExecutionCard from "../components/ExecutionCard";
 import MessageBox from "../components/messageBox";
 import "../styles/Dashboard.css";
 import "../styles/Components.css";
@@ -18,12 +17,21 @@ function Dashboard() {
   const [executions, setExecutions] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const api = "http://localhost:5000/api";
+  const api = "https://flowpilot-workflow-automation.onrender.com";
 
   const getStatusClass = (status) => {
     if (status === "completed") return "status completed";
     if (status === "rejected") return "status rejected";
     return "status progress";
+  };
+
+  const getCurrentStepName = (exec) => {
+    if (!exec?.steps || exec.steps.length === 0) return "No steps";
+    if (exec.status === "completed") return "Completed";
+    if (exec.status === "rejected") {
+      return exec.steps[exec.currentStepIndex] || "Rejected";
+    }
+    return exec.steps[exec.currentStepIndex] || "Not available";
   };
 
   const loadWorkflows = async () => {
@@ -101,7 +109,7 @@ function Dashboard() {
       });
 
       setExecution(res.data.execution);
-      setMessage(res.data.message);
+      setMessage(res.data.message || "Step approved");
       await loadExecutions();
     } catch (error) {
       console.log("Error approving step:", error);
@@ -122,7 +130,7 @@ function Dashboard() {
       });
 
       setExecution(res.data.execution);
-      setMessage(res.data.message);
+      setMessage(res.data.message || "Step rejected");
       await loadExecutions();
     } catch (error) {
       console.log("Error rejecting step:", error);
@@ -149,10 +157,9 @@ function Dashboard() {
             <p className="mini-title">Workflow Control Center</p>
             <h1>Track, approve, and manage workflow executions from one place.</h1>
             <p className="hero-text">
-              
-                 Rule-based workflow progression is automatically handled based on input conditions.
-                 Start new workflows, monitor execution progress, review logs, and manage audit data through one clean dashboard.
-
+              Rule-based workflow progression is automatically handled based on input
+              conditions. Start new workflows, monitor execution progress, review logs,
+              and manage audit data through one clean dashboard.
             </p>
             <button className="refresh-btn" onClick={refreshAll}>
               Refresh Data
@@ -264,7 +271,7 @@ function Dashboard() {
                 <h2>Execution Details</h2>
                 {execution && (
                   <span className={getStatusClass(execution.status)}>
-                    {execution.status}
+                    {execution.status === "in_progress" ? "In progress" : execution.status}
                   </span>
                 )}
               </div>
@@ -283,9 +290,7 @@ function Dashboard() {
 
                     <div className="detail-box">
                       <span className="detail-label">Current Step</span>
-                      <span className="detail-value">
-                        {execution.currentStep?.name || "Not available"}
-                      </span>
+                      <span className="detail-value">{getCurrentStepName(execution)}</span>
                     </div>
 
                     <div className="detail-box">
@@ -332,8 +337,8 @@ function Dashboard() {
                   <div className="logs-box">
                     {execution.logs?.length > 0 ? (
                       <ul>
-                        {execution.logs.map((log, index) => (
-                          <li key={index}>{log.message}</li>
+                        {execution.logs.map((log, i) => (
+                          <li key={i}>{log.message}</li>
                         ))}
                       </ul>
                     ) : (
@@ -354,14 +359,28 @@ function Dashboard() {
                 {executions.length === 0 ? (
                   <p className="empty-text">No executions found.</p>
                 ) : (
-                  executions.map((exec) => (
-                    <ExecutionCard
-                      key={exec._id}
-                      exec={exec}
-                      active={execution?._id === exec._id}
-                      onClick={() => setExecution(exec)}
-                      getStatusClass={getStatusClass}
-                    />
+                  executions.map((item) => (
+                    <div
+                      key={item._id}
+                      className={`history-card ${
+                        execution?._id === item._id ? "active-history" : ""
+                      }`}
+                      onClick={() => setExecution(item)}
+                    >
+                      <div className="history-top">
+                        <span className="history-id">{item._id}</span>
+                        <span className={getStatusClass(item.status)}>
+                          {item.status === "in_progress" ? "In progress" : item.status}
+                        </span>
+                      </div>
+
+                      <p className="muted">
+                        <strong>Current Step:</strong> {getCurrentStepName(item)}
+                      </p>
+                      <p className="muted">
+                        <strong>Priority:</strong> {item.data?.priority || "-"}
+                      </p>
+                    </div>
                   ))
                 )}
               </div>

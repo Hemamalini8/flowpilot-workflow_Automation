@@ -1,36 +1,29 @@
 const mongoose = require("mongoose");
 
-const ExecutionSchema = new mongoose.Schema(
-  {
-    workflow: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Workflow",
-      required: true
-    },
-    currentStep: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Step"
-    },
-    status: {
-      type: String,
-      enum: ["pending", "in_progress", "completed", "rejected"],
-      default: "pending"
-    },
-    data: {
-      type: Object,
-      default: {}
-    },
-    logs: [
-      {
-        message: String,
-        time: {
-          type: Date,
-          default: Date.now
-        }
-      }
-    ]
+const executionSchema = new mongoose.Schema({
+  workflowId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Workflow",
   },
-  { timestamps: true }
-);
+  data: Object,
+  steps: [String],
+  currentStepIndex: {
+    type: Number,
+    default: 0,
+  },
+  status: {
+    type: String,
+    default: "in_progress",
+  },
+  logs: [
+    {
+      message: String,
+      timestamp: {
+        type: Date,
+        default: Date.now,
+      },
+    },
+  ],
+});
 
-module.exports = mongoose.model("Execution", ExecutionSchema);
+module.exports = mongoose.model("Execution", executionSchema);

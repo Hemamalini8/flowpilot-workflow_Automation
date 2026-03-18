@@ -5,14 +5,9 @@ import "../styles/Components.css";
 
 function AuditLog() {
   const [executions, setExecutions] = useState([]);
+  const [message, setMessage] = useState("");
 
-  const api = "http://localhost:5000/api";
-
-  const getStatusClass = (status) => {
-    if (status === "completed") return "status completed";
-    if (status === "rejected") return "status rejected";
-    return "status progress";
-  };
+  const api = "https://flowpilot-workflow-automation.onrender.com";
 
   const loadExecutions = async () => {
     try {
@@ -20,6 +15,7 @@ function AuditLog() {
       setExecutions(res.data);
     } catch (error) {
       console.log("Error loading audit logs:", error);
+      setMessage("Failed to load audit logs");
     }
   };
 
@@ -27,27 +23,58 @@ function AuditLog() {
     loadExecutions();
   }, []);
 
+  const getStatusClass = (status) => {
+    if (status === "completed") return "status completed";
+    if (status === "rejected") return "status rejected";
+    return "status progress";
+  };
+
+  const getWorkflowName = (exec) => {
+    if (exec?.workflowId && typeof exec.workflowId === "object") {
+      return exec.workflowId.name || "-";
+    }
+    return "-";
+  };
+
+  const getCurrentStepName = (exec) => {
+    if (!exec?.steps || exec.steps.length === 0) return "-";
+    if (exec.status === "completed") return "Completed";
+    if (exec.status === "rejected") {
+      return exec.steps[exec.currentStepIndex] || "Rejected";
+    }
+    return exec.steps[exec.currentStepIndex] || "-";
+  };
+
   return (
     <div className="dashboard-page">
       <div className="container">
-        <section className="hero">
+        <section
+          className="hero"
+          style={{ maxWidth: "1080px", margin: "0 auto 20px auto" }}
+        >
           <div className="hero-left">
             <p className="mini-title">Audit Log</p>
             <h1>Track all workflow executions for monitoring and compliance.</h1>
             <p className="hero-text">
-              Review workflow runs, status, current step, and execution details in one place.
+              Review workflow runs, status, current step, and execution details
+              in one place.
             </p>
           </div>
         </section>
 
-        <div className="card">
+        {message && <div className="message-box">{message}</div>}
+
+        <div
+          className="card audit-log-card"
+          style={{ maxWidth: "1080px", margin: "0 auto" }}
+        >
           <div className="section-header">
             <h2>Execution Audit Table</h2>
             <span className="pill blue">{executions.length}</span>
           </div>
 
-          <div style={{ overflowX: "auto" }}>
-            <table className="audit-table">
+          <div className="workflow-table-wrapper">
+            <table className="workflow-table audit-clean-table">
               <thead>
                 <tr>
                   <th>Execution ID</th>
@@ -59,22 +86,45 @@ function AuditLog() {
                   <th>Priority</th>
                 </tr>
               </thead>
+
               <tbody>
-                {executions.map((exec) => (
-                  <tr key={exec._id}>
-                    <td>{exec._id}</td>
-                    <td>
-                      <span className={getStatusClass(exec.status)}>
-                        {exec.status}
-                      </span>
+                {executions.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="empty-row">
+                      No audit logs found.
                     </td>
-                    <td>{exec.workflow?.name || "Not available"}</td>
-                    <td>{exec.currentStep?.name || "Not available"}</td>
-                    <td>{exec.data?.amount ?? "-"}</td>
-                    <td>{exec.data?.country || "-"}</td>
-                    <td>{exec.data?.priority || "-"}</td>
                   </tr>
-                ))}
+                ) : (
+                  executions.map((exec) => (
+                    <tr key={exec._id}>
+                      <td className="audit-id-cell">
+                        <span className="workflow-id-badge">
+                          {exec._id.slice(-8)}
+                        </span>
+                      </td>
+
+                      <td>
+                        <span className={getStatusClass(exec.status)}>
+                          {exec.status === "in_progress"
+                            ? "In Progress"
+                            : exec.status}
+                        </span>
+                      </td>
+
+                      <td className="audit-text-cell">
+                        {getWorkflowName(exec)}
+                      </td>
+
+                      <td className="audit-text-cell">
+                        {getCurrentStepName(exec)}
+                      </td>
+
+                      <td>{exec.data?.amount ?? "-"}</td>
+                      <td>{exec.data?.country || "-"}</td>
+                      <td>{exec.data?.priority || "-"}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

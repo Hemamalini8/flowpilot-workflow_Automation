@@ -32,12 +32,7 @@ const workflowSchema = new mongoose.Schema(
       ref: "Step",
       default: null,
     },
-    steps: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Step",
-      },
-    ],
+    steps: [String],
   },
   { timestamps: true }
 );

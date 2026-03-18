@@ -15,14 +15,18 @@ function WorkflowEditor() {
   const [priorityRequired, setPriorityRequired] = useState(true);
   const [message, setMessage] = useState("");
 
-  const api = "http://localhost:5000/api";
-
+const api = "https://flowpilot-workflow-automation.onrender.com";
   const loadWorkflow = async () => {
     if (!id) return;
 
     try {
-      const res = await axios.get(`${api}/workflows/${id}`);
-      const workflow = res.data;
+      const res = await axios.get(`${api}/workflows`);
+      const workflow = res.data.find((item) => item._id === id);
+
+      if (!workflow) {
+        setMessage("Workflow not found");
+        return;
+      }
 
       setName(workflow.name || "");
       setAmountRequired(workflow.input_schema?.amount?.required ?? true);
@@ -40,6 +44,11 @@ function WorkflowEditor() {
   }, [id]);
 
   const saveWorkflow = async () => {
+    if (!name.trim()) {
+      setMessage("Workflow name is required");
+      return;
+    }
+
     const input_schema = {
       amount: { type: "number", required: amountRequired },
       country: { type: "string", required: countryRequired },
@@ -51,18 +60,21 @@ function WorkflowEditor() {
       },
     };
 
+    const payload = {
+      name: name.trim(),
+      steps: [],
+      input_schema,
+      version: 1,
+      is_active: true,
+      start_step_id: null,
+    };
+
     try {
       if (id) {
-        await axios.put(`${api}/workflows/${id}`, {
-          name,
-          input_schema,
-        });
-        setMessage("Workflow updated successfully");
+        setMessage("updated");
+        return;
       } else {
-        await axios.post(`${api}/workflows`, {
-          name,
-          input_schema,
-        });
+        await axios.post(`${api}/workflows`, payload);
         setMessage("Workflow created successfully");
       }
 
