@@ -22,12 +22,13 @@ app.get("/", (req, res) => {
 
 // connect DB
 mongoose
-  .connect("mongodb+srv://hemamalinirajamanickam8_db_user:Kook@1234@cluster0.qlkbheq.mongodb.net/?appName=Cluster0")
+  .connect(process.env.MONGO_URI)
   .then(() => {
     console.log("MongoDB Connected ✅");
 
-    app.listen(5000, () => {
-      console.log("Server running on port 5000 🚀");
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT} 🚀`);
     });
   })
   .catch((err) => {
