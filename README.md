@@ -1,92 +1,73 @@
-# 🚀 FlowPilot - Workflow Automation Engine
+# 🚀 FlowPilot – Workflow Automation System
 
-## 📌 Overview
-
-FlowPilot is a full-stack workflow automation system that allows users to design workflows, define rules, execute processes, and track execution logs in real-time.
-
-This project simulates real-world business automation systems like approvals, notifications, and decision-based workflows.
-Project_Video Link : https://drive.google.com/file/d/1DCgLerSIWnHXcXRcXk8XYks5gfCzXM_G/view?usp=sharing
+FlowPilot is a full-stack web application that allows users to create, manage, and execute rule-based workflows. It helps automate approval processes and track execution progress through a clean and user-friendly dashboard.
 
 ---
 
-## 🧠 Features
+## 🌐 Live Project
 
-### 🔹 Workflow Management
+* 🔗 Frontend: https://flowpilot-frontend.onrender.com/
+* 🔗 Backend API:https://flowpilot-workflow-automation.onrender.com/
+---
+
+## 🎥 Demo Video
+
+👉 [▶ Watch Demo](https://drive.google.com/file/d/1DCgLerSIWnHXcXRcXk8XYks5gfCzXM_G/view?usp=sharing)
+
+### 📝 Demo Includes
+
+* Creating a workflow
+* Adding approval steps
+* Running workflow execution
+* Approving / rejecting steps
+* Viewing dashboard updates
+
+---
+
+## ✨ Features
 
 * Create and manage workflows
-* Each workflow contains multiple steps
-* Supports versioning
-
-### 🔹 Step Types
-
-* Task (automated)
-* Approval (manual decision)
-* Notification (alerts/messages)
-
-### 🔹 Rule Engine
-
-* Dynamic rule evaluation
-* Supports:
-
-  * `>`, `<`, `==`, `!=`
-  * `&&`, `||`
-  * String functions (contains, startsWith)
-* Priority-based rule execution
-* Default fallback rule
-
-### 🔹 Workflow Execution
-
-* Start workflow with input data
-* Step-by-step execution
-* Approval / Reject actions
-* Real-time status tracking
-
-### 🔹 Execution Logs
-
-* Tracks:
-
-  * Step execution
-  * Rule evaluation
-  * Decisions taken
-* Shows execution history
+* Define multi-step approval processes
+* Execute workflows in real-time
+* Approve or reject steps
+* Track execution history and logs
+* Responsive and modern dashboard UI
 
 ---
 
 ## 🛠️ Tech Stack
 
-### Frontend
+**Frontend**
 
-* React (Vite)
+* React.js
 * Axios
-* CSS (Custom UI)
+* CSS
 
-### Backend
+**Backend**
 
 * Node.js
 * Express.js
 
-### Database
+**Database**
 
-* MongoDB (Mongoose)
+* MongoDB Atlas
 
 ---
 
-## 📁 Project Structure
+## 📂 Project Structure
 
 ```
 workflow-engine/
 │
 ├── backend/
-│   ├── models/
 │   ├── routes/
+│   ├── models/
 │   ├── server.js
-│   └── .env
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   └── styles/
+│   ├── components/
+│   ├── pages/
 │
 └── README.md
 ```
@@ -95,126 +76,63 @@ workflow-engine/
 
 ## ⚙️ Setup Instructions
 
-### 1️⃣ Clone the repository
-
-```bash
-git clone <your-repo-link>
-cd workflow-engine
-```
-
-### 2️⃣ Backend setup
-
-```bash
-cd backend
-npm install
-```
-
-Create `.env` file:
+### 1. Clone the repository
 
 ```
-MONGO_URI=your_mongodb_connection_string
-```
-
-Run backend:
-
-```bash
-npx nodemon server.js
+git clone https://github.com/Hemamalini8/flowpilot-workflow_Automation.git
+cd flowpilot-workflow_Automation
 ```
 
 ---
 
-### 3️⃣ Frontend setup
+### 2. Backend Setup
 
-```bash
+```
+cd backend
+npm install
+```
+
+Create a `.env` file:
+
+```
+MONGO_URI=your_mongodb_connection_string
+PORT=5000
+```
+
+Run backend:
+
+```
+npm start
+```
+
+---
+
+### 3. Frontend Setup
+
+```
 cd frontend
 npm install
 npm run dev
 ```
 
-Frontend runs on:
+---
 
-```
-http://localhost:5173
-```
+## 📌 Future Improvements
 
-Backend runs on:
-
-```
-http://localhost:5000
-```
+* User authentication
+* Role-based access control
+* Notification system
+* Workflow templates
 
 ---
 
-## 🔗 API Endpoints
+## 👩‍💻 Author
 
-### Workflows
-
-* `GET /workflows` → Get all workflows
-* `POST /workflows` → Create workflow
-
-### Executions
-
-* `GET /executions` → Get execution history
-* `POST /executions/start` → Start workflow
-* `POST /executions/approve` → Approve step
-* `POST /executions/reject` → Reject step
+**Hemamalini R**
+Full Stack Developer (MERN & Java)
 
 ---
 
-## 🧪 Sample Workflow
+## ⭐ Conclusion
 
-**Expense Approval Flow**
-
-```
-Start → Manager Approval → Finance Approval → Completed
-```
-
-### Example Input:
-
-```json
-{
-  "amount": 50000,
-  "country": "India",
-  "department": "HR",
-  "priority": "High"
-}
-```
-
----
-
-## 📊 UI Features
-
-* Dashboard with live stats
-* Workflow selection dropdown
-* Execution tracking panel
-* Approval / Reject buttons
-* Execution history timeline
-
----
-
-## 🧠 What I Built (Interview Explanation)
-
-* Designed a rule-based workflow engine
-* Implemented dynamic decision-making logic
-* Built REST APIs for workflow execution
-* Integrated MongoDB for persistence
-* Created responsive React dashboard
-* Handled async state and API integration
-
----
-
-## 🚀 Future Enhancements
-
-* Drag-and-drop workflow builder
-* Real-time updates (WebSockets)
-* Role-based authentication
-* Email / Slack notifications
-* Advanced analytics dashboard
-
----
-
-## 👨‍💻 Author
-
-Hemamalini
-
----
+FlowPilot demonstrates a complete full-stack workflow automation system with real-time execution tracking and a clean, user-friendly interface. It showcases strong skills in MERN stack development, API integration, and database management.
