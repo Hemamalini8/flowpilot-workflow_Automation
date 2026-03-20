@@ -30,9 +30,7 @@ function StepManager() {
       setWorkflow(res.data || null);
     } catch (error) {
       console.log("Error loading workflow:", error);
-      setMessage(
-        error?.response?.data?.message || "Failed to load workflow"
-      );
+      setMessage(error?.response?.data?.message || "Failed to load workflow");
     }
   };
 
@@ -44,9 +42,7 @@ function StepManager() {
       setSteps(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
       console.log("Error loading steps:", error);
-      setMessage(
-        error?.response?.data?.message || "Failed to load steps"
-      );
+      setMessage(error?.response?.data?.message || "Failed to load steps");
     }
   };
 
@@ -74,14 +70,12 @@ function StepManager() {
       setLoading(true);
       setMessage("");
 
-      const payload = {
+      await axios.post(`${api}/workflows/${currentWorkflowId}/steps`, {
         name: newStepName.trim(),
         step_type: newStepType,
         order: steps.length + 1,
         metadata: {},
-      };
-
-      await axios.post(`${api}/workflows/${currentWorkflowId}/steps`, payload);
+      });
 
       setNewStepName("");
       setNewStepType("approval");
@@ -196,7 +190,9 @@ function StepManager() {
                       className="edit-btn workflow-action-btn"
                       onClick={() =>
                         navigate(
-                          `/rules/${currentWorkflowId}/${encodeURIComponent(step.step_id)}`
+                          `/rules/${currentWorkflowId}/${encodeURIComponent(
+                            step.step_id
+                          )}?stepId=${encodeURIComponent(step.step_id)}`
                         )
                       }
                     >

@@ -1,12 +1,20 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import "../styles/Dashboard.css";
 import "../styles/Components.css";
 
 function RuleEditor() {
-  const { workflowId, stepId } = useParams();
+  const { workflowId, stepId: routeStepId } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
+
+  const queryStepId = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get("stepId") || "";
+  }, [location.search]);
+
+  const stepId = routeStepId || queryStepId;
 
   const [rules, setRules] = useState([]);
   const [steps, setSteps] = useState([]);
@@ -15,21 +23,9 @@ function RuleEditor() {
   const [priority, setPriority] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const api = "https://flowpilot-workflow-automation.onrender.com/api";
-
-  const loadRules = async () => {
-    if (!stepId) return;
-
-    try {
-      const res = await axios.get(`${api}/steps/${stepId}/rules`);
-      setRules(Array.isArray(res.data) ? res.data : []);
-      setMessage("");
-    } catch (error) {
-      console.log("Error loading rules:", error);
-      setMessage(error?.response?.data?.message || "Failed to load rules");
-    }
-  };
 
   const loadSteps = async () => {
     if (!workflowId) return;
@@ -43,13 +39,24 @@ function RuleEditor() {
     }
   };
 
-  useEffect(() => {
-    if (workflowId && stepId) {
-      loadRules();
-      loadSteps();
-    } else {
-      setMessage("Workflow id or step id missing");
+  const loadRules = async () => {
+    if (!stepId) {
+      setRules([]);
+      return;
     }
+
+    try {
+      const res = await axios.get(`${api}/steps/${stepId}/rules`);
+      setRules(Array.isArray(res.data) ? res.data : []);
+    } catch (error) {
+      console.log("Error loading rules:", error);
+      setMessage(error?.response?.data?.message || "Failed to load rules");
+    }
+  };
+
+  useEffect(() => {
+    loadSteps();
+    loadRules();
   }, [workflowId, stepId]);
 
   const resetForm = () => {
@@ -60,12 +67,19 @@ function RuleEditor() {
   };
 
   const handleSaveRule = async () => {
+    if (!workflowId || !stepId) {
+      setMessage("Workflow id or step id missing");
+      return;
+    }
+
     if (!condition.trim() || !priority) {
       setMessage("Condition and priority are required");
       return;
     }
 
     try {
+      setLoading(true);
+
       if (editingId) {
         await axios.put(`${api}/rules/${editingId}`, {
           condition: condition.trim(),
@@ -84,7 +98,7 @@ function RuleEditor() {
       }
 
       resetForm();
-      loadRules();
+      await loadRules();
     } catch (error) {
       console.log("Error saving rule:", error);
       setMessage(
@@ -92,6 +106,8 @@ function RuleEditor() {
           error?.response?.data?.error ||
           "Failed to save rule"
       );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -106,7 +122,7 @@ function RuleEditor() {
     try {
       await axios.delete(`${api}/rules/${id}`);
       setMessage("Rule deleted successfully");
-      loadRules();
+      await loadRules();
     } catch (error) {
       console.log("Error deleting rule:", error);
       setMessage("Failed to delete rule");
@@ -117,13 +133,15 @@ function RuleEditor() {
     if (!targetStepId) return "End Workflow";
 
     const found = steps.find((step, index) => {
-      const idValue =
+      const value =
         step?.step_id || step?.id || step?._id?.toString() || `step${index + 1}`;
-      return String(idValue) === String(targetStepId);
+      return String(value) === String(targetStepId);
     });
 
     return found?.name || targetStepId;
   };
+
+  const selectedStepName = getStepName(stepId);
 
   return (
     <div className="dashboard-page">
@@ -133,7 +151,7 @@ function RuleEditor() {
             <p className="mini-title">Rule Editor</p>
             <h1>Define next-step logic</h1>
             <p className="hero-text">
-              Create and manage rules for this step.
+              Add and manage rules for this workflow step.
             </p>
           </div>
         </section>
@@ -146,6 +164,13 @@ function RuleEditor() {
               <div className="section-header">
                 <h2>{editingId ? "Edit Rule" : "Add Rule"}</h2>
               </div>
+
+              <p className="muted" style={{ marginBottom: "12px" }}>
+                <strong>Workflow ID:</strong> {workflowId || "-"}
+              </p>
+              <p className="muted" style={{ marginBottom: "16px" }}>
+                <strong>Step:</strong> {selectedStepName}
+              </p>
 
               <label>Condition</label>
               <input
@@ -164,7 +189,6 @@ function RuleEditor() {
                 {steps.map((step, index) => {
                   const value =
                     step?.step_id || step?.id || step?._id?.toString() || `step${index + 1}`;
-
                   return (
                     <option key={value} value={value}>
                       {step.name}
@@ -182,8 +206,8 @@ function RuleEditor() {
               />
 
               <div className="button-group">
-                <button className="start-btn" onClick={handleSaveRule}>
-                  {editingId ? "Update Rule" : "Create Rule"}
+                <button className="start-btn" onClick={handleSaveRule} disabled={loading}>
+                  {loading ? "Processing..." : editingId ? "Update Rule" : "Create Rule"}
                 </button>
 
                 <button className="reject-btn" onClick={() => navigate(-1)}>
