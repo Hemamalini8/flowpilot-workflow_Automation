@@ -11,10 +11,10 @@ function generateStepId(name, order) {
     .replace(/\s+/g, "_")
     .replace(/[^a-z0-9_]/g, "");
 
-  return `${safeName || "step"}_${order || 1}`;
+  return `${safeName}_${order}`;
 }
 
-// ADD STEP TO WORKFLOW
+// ADD STEP
 router.post("/workflows/:workflow_id/steps", async (req, res) => {
   try {
     const { workflow_id } = req.params;
@@ -26,33 +26,39 @@ router.post("/workflows/:workflow_id/steps", async (req, res) => {
       return res.status(404).json({ message: "Workflow not found" });
     }
 
-    const steps = Array.isArray(workflow.steps) ? workflow.steps : [];
-    const stepOrder = Number(order) || steps.length + 1;
-    const step_id = generateStepId(name, stepOrder);
+    const finalOrder = Number(order) || ((workflow.steps || []).length + 1);
+    const step_id = generateStepId(name, finalOrder);
+
+    const exists = await Step.findOne({ workflow: workflow_id, step_id });
+    if (exists) {
+      return res.status(400).json({ message: "Step id already exists. Use different step name." });
+    }
 
     const step = new Step({
       workflow: workflow_id,
-      step_id,
       name,
       step_type,
-      order: stepOrder,
+      order: finalOrder,
       metadata: metadata || {},
+      step_id,
     });
 
     await step.save();
 
+    workflow.steps = Array.isArray(workflow.steps) ? workflow.steps : [];
     workflow.steps.push({
-      step_id,
-      name,
-      step_type,
-      order: stepOrder,
-      metadata: metadata || {},
+      _id: step._id,
+      step_id: step.step_id,
+      name: step.name,
+      step_type: step.step_type,
+      order: step.order,
+      metadata: step.metadata || {},
     });
 
     workflow.steps.sort((a, b) => (a.order || 0) - (b.order || 0));
 
     if (!workflow.start_step_id) {
-      workflow.start_step_id = step_id;
+      workflow.start_step_id = step.step_id;
     }
 
     await workflow.save();
@@ -60,26 +66,17 @@ router.post("/workflows/:workflow_id/steps", async (req, res) => {
     res.status(201).json({
       message: "Step added successfully",
       step,
-      workflow,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// LIST STEPS FOR WORKFLOW
+// LIST STEPS
 router.get("/workflows/:workflow_id/steps", async (req, res) => {
   try {
-    const workflow = await Workflow.findById(req.params.workflow_id);
-
-    if (!workflow) {
-      return res.status(404).json({ message: "Workflow not found" });
-    }
-
-    const steps = Array.isArray(workflow.steps) ? workflow.steps : [];
-    const sortedSteps = [...steps].sort((a, b) => (a.order || 0) - (b.order || 0));
-
-    res.json(sortedSteps);
+    const steps = await Step.find({ workflow: req.params.workflow_id }).sort({ order: 1 });
+    res.json(steps);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -88,49 +85,41 @@ router.get("/workflows/:workflow_id/steps", async (req, res) => {
 // UPDATE STEP
 router.put("/steps/:id", async (req, res) => {
   try {
-    const step = await Step.findById(req.params.id);
+    const oldStep = await Step.findById(req.params.id);
 
-    if (!step) {
+    if (!oldStep) {
       return res.status(404).json({ message: "Step not found" });
     }
 
     const updatedStep = await Step.findByIdAndUpdate(
       req.params.id,
       {
-        name: req.body.name ?? step.name,
-        step_type: req.body.step_type ?? step.step_type,
-        order: req.body.order ?? step.order,
-        metadata: req.body.metadata ?? step.metadata,
+        name: req.body.name ?? oldStep.name,
+        step_type: req.body.step_type ?? oldStep.step_type,
+        order: req.body.order ?? oldStep.order,
+        metadata: req.body.metadata ?? oldStep.metadata,
       },
       { new: true }
     );
 
-    const workflow = await Workflow.findById(step.workflow);
+    const workflow = await Workflow.findById(updatedStep.workflow);
 
     if (workflow) {
-      const workflowSteps = Array.isArray(workflow.steps) ? workflow.steps : [];
-
-      const updatedWorkflowSteps = workflowSteps.map((item, index) => {
-        const currentStepId =
-          item?.step_id || item?.id || item?._id?.toString() || `step${index + 1}`;
-
-        if (String(currentStepId) === String(step.step_id)) {
+      workflow.steps = (workflow.steps || []).map((step) => {
+        if (String(step._id) === String(updatedStep._id)) {
           return {
-            step_id: step.step_id,
+            _id: updatedStep._id,
+            step_id: updatedStep.step_id,
             name: updatedStep.name,
             step_type: updatedStep.step_type,
             order: updatedStep.order,
             metadata: updatedStep.metadata || {},
           };
         }
-
-        return item;
+        return step;
       });
 
-      workflow.steps = updatedWorkflowSteps.sort(
-        (a, b) => (a.order || 0) - (b.order || 0)
-      );
-
+      workflow.steps.sort((a, b) => (a.order || 0) - (b.order || 0));
       await workflow.save();
     }
 
@@ -156,11 +145,7 @@ router.delete("/steps/:id", async (req, res) => {
 
     if (workflow) {
       workflow.steps = (workflow.steps || []).filter(
-        (item, index) => {
-          const currentStepId =
-            item?.step_id || item?.id || item?._id?.toString() || `step${index + 1}`;
-          return String(currentStepId) !== String(step.step_id);
-        }
+        (item) => String(item._id) !== String(step._id)
       );
 
       if (String(workflow.start_step_id) === String(step.step_id)) {
@@ -171,8 +156,12 @@ router.delete("/steps/:id", async (req, res) => {
       await workflow.save();
     }
 
-    await Rule.deleteMany({ step_id: step.step_id });
-    await Rule.deleteMany({ next_step_id: step.step_id });
+    await Rule.deleteMany({
+      $or: [
+        { step_id: step.step_id },
+        { next_step_id: step.step_id },
+      ],
+    });
 
     await Step.findByIdAndDelete(req.params.id);
 

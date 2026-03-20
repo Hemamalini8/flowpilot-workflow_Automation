@@ -8,7 +8,8 @@ function StepManager() {
   const params = useParams();
   const navigate = useNavigate();
 
-  const currentWorkflowId = params.workflowId || params.id || params.workflow_id || "";
+  const currentWorkflowId =
+    params.workflowId || params.id || params.workflow_id || "";
 
   const [workflow, setWorkflow] = useState(null);
   const [steps, setSteps] = useState([]);
@@ -38,7 +39,9 @@ function StepManager() {
     if (!currentWorkflowId) return;
 
     try {
-      const res = await axios.get(`${api}/workflows/${currentWorkflowId}/steps`);
+      const res = await axios.get(
+        `${api}/workflows/${currentWorkflowId}/steps`,
+      );
       setSteps(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
       console.log("Error loading steps:", error);
@@ -88,7 +91,7 @@ function StepManager() {
       setMessage(
         error?.response?.data?.message ||
           error?.response?.data?.error ||
-          "Failed to add step"
+          "Failed to add step",
       );
     } finally {
       setLoading(false);
@@ -110,7 +113,7 @@ function StepManager() {
       setMessage(
         error?.response?.data?.message ||
           error?.response?.data?.error ||
-          "Failed to delete step"
+          "Failed to delete step",
       );
     } finally {
       setLoading(false);
@@ -189,11 +192,7 @@ function StepManager() {
                     <button
                       className="edit-btn workflow-action-btn"
                       onClick={() =>
-                        navigate(
-                          `/rules/${currentWorkflowId}/${encodeURIComponent(
-                            step.step_id
-                          )}?stepId=${encodeURIComponent(step.step_id)}`
-                        )
+                        navigate(`/rules/${currentWorkflowId}/${step.step_id}`)
                       }
                     >
                       Rules
