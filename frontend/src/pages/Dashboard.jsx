@@ -25,19 +25,48 @@ function Dashboard() {
     return "status progress";
   };
 
+  const getWorkflowById = (workflowIdOrObject) => {
+    if (!workflowIdOrObject) return null;
+
+    const workflowId =
+      typeof workflowIdOrObject === "object"
+        ? workflowIdOrObject._id
+        : workflowIdOrObject;
+
+    return workflows.find((w) => String(w._id) === String(workflowId)) || null;
+  };
+
   const getCurrentStepName = (exec) => {
     if (!exec) return "No step";
 
     if (exec.status === "completed") return "Completed";
     if (exec.status === "rejected") return "Rejected";
 
-    return exec.currentStep || "Step 1";
+    const workflow = getWorkflowById(exec.workflow);
+
+    if (!workflow || !Array.isArray(workflow.steps) || workflow.steps.length === 0) {
+      return exec.currentStep || "No steps";
+    }
+
+    const currentStep = workflow.steps.find(
+      (step, index) => {
+        const stepId =
+          step?.step_id || step?.id || step?._id?.toString() || `step${index + 1}`;
+        return String(stepId) === String(exec.currentStep);
+      }
+    );
+
+    if (currentStep) {
+      return currentStep.name || currentStep.step_id || currentStep.id || exec.currentStep;
+    }
+
+    return exec.currentStep || "No steps";
   };
 
   const loadWorkflows = async () => {
     try {
       const res = await axios.get(`${api}/workflows`);
-      const workflowData = res.data || [];
+      const workflowData = Array.isArray(res.data) ? res.data : [];
       setWorkflows(workflowData);
 
       if (workflowData.length > 0 && !selectedWorkflow) {
@@ -52,7 +81,22 @@ function Dashboard() {
   const loadExecutions = async () => {
     try {
       const res = await axios.get(`${api}/executions`);
-      setExecutions(res.data || []);
+      const executionData = Array.isArray(res.data) ? res.data : [];
+      setExecutions(executionData);
+
+      if (executionData.length > 0) {
+        setExecution((prev) => {
+          if (!prev) return executionData[0];
+
+          const updatedSelected = executionData.find(
+            (item) => String(item._id) === String(prev._id)
+          );
+
+          return updatedSelected || executionData[0];
+        });
+      } else {
+        setExecution(null);
+      }
     } catch (error) {
       console.log("Error loading executions:", error);
       setMessage("Failed to load execution history");
@@ -93,7 +137,9 @@ function Dashboard() {
       await loadExecutions();
     } catch (error) {
       console.log("Error starting workflow:", error);
-      setMessage("Failed to start workflow");
+      setMessage(
+        error?.response?.data?.message || "Failed to start workflow"
+      );
     } finally {
       setLoading(false);
     }
@@ -114,7 +160,9 @@ function Dashboard() {
       await loadExecutions();
     } catch (error) {
       console.log("Error approving step:", error);
-      setMessage("Failed to approve step");
+      setMessage(
+        error?.response?.data?.message || "Failed to approve step"
+      );
     } finally {
       setLoading(false);
     }
@@ -135,7 +183,9 @@ function Dashboard() {
       await loadExecutions();
     } catch (error) {
       console.log("Error rejecting step:", error);
-      setMessage("Failed to reject step");
+      setMessage(
+        error?.response?.data?.message || "Failed to reject step"
+      );
     } finally {
       setLoading(false);
     }
