@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import "../styles/Dashboard.css";
 import "../styles/Components.css";
 
 function RuleEditor() {
-  const { stepId, workflowId } = useParams();
+  const { workflowId, stepId } = useParams();
+  const navigate = useNavigate();
 
   const [rules, setRules] = useState([]);
   const [steps, setSteps] = useState([]);
@@ -18,32 +19,38 @@ function RuleEditor() {
   const api = "https://flowpilot-workflow-automation.onrender.com/api";
 
   const loadRules = async () => {
+    if (!stepId) return;
+
     try {
       const res = await axios.get(`${api}/steps/${stepId}/rules`);
       setRules(Array.isArray(res.data) ? res.data : []);
+      setMessage("");
     } catch (error) {
       console.log("Error loading rules:", error);
-      setMessage(
-        error?.response?.data?.message || "Failed to load rules"
-      );
+      setMessage(error?.response?.data?.message || "Failed to load rules");
     }
   };
 
   const loadSteps = async () => {
+    if (!workflowId) return;
+
     try {
       const res = await axios.get(`${api}/workflows/${workflowId}/steps`);
       setSteps(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
       console.log("Error loading steps:", error);
+      setMessage(error?.response?.data?.message || "Failed to load steps");
     }
   };
 
   useEffect(() => {
-    if (stepId && workflowId) {
+    if (workflowId && stepId) {
       loadRules();
       loadSteps();
+    } else {
+      setMessage("Workflow id or step id missing");
     }
-  }, [stepId, workflowId]);
+  }, [workflowId, stepId]);
 
   const resetForm = () => {
     setCondition("");
@@ -106,16 +113,16 @@ function RuleEditor() {
     }
   };
 
-  const getStepName = (stepIdValue) => {
-    if (!stepIdValue) return "End Workflow";
+  const getStepName = (targetStepId) => {
+    if (!targetStepId) return "End Workflow";
 
     const found = steps.find((step, index) => {
-      const currentId =
+      const idValue =
         step?.step_id || step?.id || step?._id?.toString() || `step${index + 1}`;
-      return String(currentId) === String(stepIdValue);
+      return String(idValue) === String(targetStepId);
     });
 
-    return found?.name || stepIdValue;
+    return found?.name || targetStepId;
   };
 
   return (
@@ -124,9 +131,9 @@ function RuleEditor() {
         <section className="hero">
           <div className="hero-left">
             <p className="mini-title">Rule Editor</p>
-            <h1>Define next-step logic for this workflow step.</h1>
+            <h1>Define next-step logic</h1>
             <p className="hero-text">
-              Add, edit, and delete routing rules using conditions, next steps, and priority order.
+              Create and manage rules for this step.
             </p>
           </div>
         </section>
@@ -143,7 +150,7 @@ function RuleEditor() {
               <label>Condition</label>
               <input
                 type="text"
-                placeholder={`Example: amount > 5000 && country == 'US'`}
+                placeholder={`Example: amount > 100 && country == 'US'`}
                 value={condition}
                 onChange={(e) => setCondition(e.target.value)}
               />
@@ -169,7 +176,7 @@ function RuleEditor() {
               <label>Priority</label>
               <input
                 type="number"
-                placeholder="Enter priority (1 = highest)"
+                placeholder="1 = highest"
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
               />
@@ -179,11 +186,9 @@ function RuleEditor() {
                   {editingId ? "Update Rule" : "Create Rule"}
                 </button>
 
-                {editingId && (
-                  <button className="reject-btn" onClick={resetForm}>
-                    Cancel Edit
-                  </button>
-                )}
+                <button className="reject-btn" onClick={() => navigate(-1)}>
+                  Back
+                </button>
               </div>
             </div>
           </div>
@@ -191,12 +196,12 @@ function RuleEditor() {
           <div className="right-panel">
             <div className="card">
               <div className="section-header">
-                <h2>Step Rules</h2>
+                <h2>Rules</h2>
                 <span className="pill blue">{rules.length}</span>
               </div>
 
               <div style={{ overflowX: "auto" }}>
-                <table className="audit-table">
+                <table className="workflow-table">
                   <thead>
                     <tr>
                       <th>Priority</th>
@@ -220,14 +225,14 @@ function RuleEditor() {
                           <td>{getStepName(rule.next_step_id)}</td>
                           <td>
                             <button
-                              className="table-link-btn"
+                              className="edit-btn workflow-action-btn"
                               onClick={() => handleEdit(rule)}
-                              style={{ marginRight: "8px", border: "none", cursor: "pointer" }}
+                              style={{ marginRight: "8px" }}
                             >
                               Edit
                             </button>
                             <button
-                              className="delete-btn"
+                              className="delete-btn workflow-action-btn"
                               onClick={() => handleDelete(rule._id)}
                             >
                               Delete
