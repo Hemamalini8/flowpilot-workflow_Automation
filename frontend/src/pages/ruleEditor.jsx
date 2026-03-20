@@ -23,7 +23,9 @@ function RuleEditor() {
       setRules(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
       console.log("Error loading rules:", error);
-      setMessage("Failed to load rules");
+      setMessage(
+        error?.response?.data?.message || "Failed to load rules"
+      );
     }
   };
 
@@ -51,7 +53,7 @@ function RuleEditor() {
   };
 
   const handleSaveRule = async () => {
-    if (!condition || !priority) {
+    if (!condition.trim() || !priority) {
       setMessage("Condition and priority are required");
       return;
     }
@@ -59,7 +61,7 @@ function RuleEditor() {
     try {
       if (editingId) {
         await axios.put(`${api}/rules/${editingId}`, {
-          condition,
+          condition: condition.trim(),
           next_step_id: nextStepId || null,
           priority: Number(priority),
         });
@@ -67,7 +69,7 @@ function RuleEditor() {
       } else {
         await axios.post(`${api}/steps/${stepId}/rules`, {
           workflowId,
-          condition,
+          condition: condition.trim(),
           next_step_id: nextStepId || null,
           priority: Number(priority),
         });
@@ -78,7 +80,11 @@ function RuleEditor() {
       loadRules();
     } catch (error) {
       console.log("Error saving rule:", error);
-      setMessage(error?.response?.data?.message || "Failed to save rule");
+      setMessage(
+        error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          "Failed to save rule"
+      );
     }
   };
 

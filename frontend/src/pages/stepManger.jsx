@@ -5,35 +5,48 @@ import "../styles/Dashboard.css";
 import "../styles/Components.css";
 
 function StepManager() {
-  const { workflowId, id } = useParams();
-  const currentWorkflowId = workflowId || id;
+  const params = useParams();
   const navigate = useNavigate();
+
+  const currentWorkflowId = params.workflowId || params.id || params.workflow_id || "";
 
   const [workflow, setWorkflow] = useState(null);
   const [steps, setSteps] = useState([]);
   const [newStepName, setNewStepName] = useState("");
-  const [newStepType, setNewStepType] = useState("task");
+  const [newStepType, setNewStepType] = useState("approval");
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const api = "https://flowpilot-workflow-automation.onrender.com/api";
 
   const loadWorkflow = async () => {
+    if (!currentWorkflowId) {
+      setMessage("Workflow id missing in route");
+      return;
+    }
+
     try {
       const res = await axios.get(`${api}/workflows/${currentWorkflowId}`);
       setWorkflow(res.data || null);
     } catch (error) {
       console.log("Error loading workflow:", error);
-      setMessage("Failed to load workflow");
+      setMessage(
+        error?.response?.data?.message || "Failed to load workflow"
+      );
     }
   };
 
   const loadSteps = async () => {
+    if (!currentWorkflowId) return;
+
     try {
       const res = await axios.get(`${api}/workflows/${currentWorkflowId}/steps`);
       setSteps(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
       console.log("Error loading steps:", error);
-      setMessage("Failed to load steps");
+      setMessage(
+        error?.response?.data?.message || "Failed to load steps"
+      );
     }
   };
 
@@ -41,43 +54,72 @@ function StepManager() {
     if (currentWorkflowId) {
       loadWorkflow();
       loadSteps();
+    } else {
+      setMessage("Workflow id missing in route");
     }
   }, [currentWorkflowId]);
 
   const addStep = async () => {
+    if (!currentWorkflowId) {
+      setMessage("Workflow id missing in route");
+      return;
+    }
+
     if (!newStepName.trim()) {
       setMessage("Step name is required");
       return;
     }
 
     try {
-      await axios.post(`${api}/workflows/${currentWorkflowId}/steps`, {
+      setLoading(true);
+      setMessage("");
+
+      const payload = {
         name: newStepName.trim(),
         step_type: newStepType,
         order: steps.length + 1,
         metadata: {},
-      });
+      };
+
+      await axios.post(`${api}/workflows/${currentWorkflowId}/steps`, payload);
 
       setNewStepName("");
-      setNewStepType("task");
+      setNewStepType("approval");
       setMessage("Step added successfully");
+
       await loadWorkflow();
       await loadSteps();
     } catch (error) {
       console.log("Error adding step:", error);
-      setMessage(error?.response?.data?.message || "Failed to add step");
+      setMessage(
+        error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          "Failed to add step"
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   const deleteStep = async (id) => {
     try {
+      setLoading(true);
+      setMessage("");
+
       await axios.delete(`${api}/steps/${id}`);
+
       setMessage("Step deleted successfully");
       await loadWorkflow();
       await loadSteps();
     } catch (error) {
       console.log("Error deleting step:", error);
-      setMessage(error?.response?.data?.message || "Failed to delete step");
+      setMessage(
+        error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          "Failed to delete step"
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -115,17 +157,18 @@ function StepManager() {
             value={newStepType}
             onChange={(e) => setNewStepType(e.target.value)}
           >
-            <option value="task">Task</option>
             <option value="approval">Approval</option>
             <option value="notification">Notification</option>
+            <option value="task">Task</option>
           </select>
 
           <button
             className="start-btn"
             onClick={addStep}
+            disabled={loading}
             style={{ marginTop: "16px", marginBottom: "24px" }}
           >
-            Add Step
+            {loading ? "Processing..." : "Add Step"}
           </button>
 
           <div className="history-list">
