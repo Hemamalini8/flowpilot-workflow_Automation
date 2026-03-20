@@ -1,101 +1,82 @@
-import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import "../styles/Dashboard.css";
 import "../styles/Components.css";
 
 function StepManager() {
-  const { id } = useParams();
+  const { workflowId } = useParams();
+  const navigate = useNavigate();
 
   const [workflow, setWorkflow] = useState(null);
   const [steps, setSteps] = useState([]);
-  const [newStep, setNewStep] = useState("");
+  const [newStepName, setNewStepName] = useState("");
+  const [newStepType, setNewStepType] = useState("task");
   const [message, setMessage] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(true);
 
   const api = "https://flowpilot-workflow-automation.onrender.com/api";
 
-  const sanitizedSteps = useMemo(() => {
-    return (steps || [])
-      .map((step) => String(step).trim())
-      .filter((step) => step.length > 0);
-  }, [steps]);
-
   const loadWorkflow = async () => {
     try {
-      setLoading(true);
-      const res = await axios.get(`${api}/workflows/${id}`);
-      setWorkflow(res.data);
-      setSteps(Array.isArray(res.data.steps) ? res.data.steps : []);
-      setMessage("");
+      const res = await axios.get(`${api}/workflows/${workflowId}`);
+      setWorkflow(res.data || null);
     } catch (error) {
-      console.log("Error loading workflow steps:", error);
+      console.log("Error loading workflow:", error);
+      setMessage("Failed to load workflow");
+    }
+  };
+
+  const loadSteps = async () => {
+    try {
+      const res = await axios.get(`${api}/workflows/${workflowId}/steps`);
+      setSteps(Array.isArray(res.data) ? res.data : []);
+    } catch (error) {
+      console.log("Error loading steps:", error);
       setMessage("Failed to load steps");
-    } finally {
-      setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (id) {
+    if (workflowId) {
       loadWorkflow();
+      loadSteps();
     }
-  }, [id]);
+  }, [workflowId]);
 
-  const addStep = () => {
-    const trimmed = newStep.trim();
-
-    if (!trimmed) {
-      setMessage("Please enter a step name");
+  const addStep = async () => {
+    if (!newStepName.trim()) {
+      setMessage("Step name is required");
       return;
     }
-
-    const alreadyExists = sanitizedSteps.some(
-      (step) => step.toLowerCase() === trimmed.toLowerCase()
-    );
-
-    if (alreadyExists) {
-      setMessage("This step already exists");
-      return;
-    }
-
-    setSteps([...sanitizedSteps, trimmed]);
-    setNewStep("");
-    setMessage("");
-  };
-
-  const removeStep = (indexToRemove) => {
-    const updatedSteps = sanitizedSteps.filter((_, index) => index !== indexToRemove);
-    setSteps(updatedSteps);
-    setMessage("");
-  };
-
-  const saveSteps = async () => {
-    if (!workflow) return;
 
     try {
-      setSaving(true);
-
-      await axios.put(`${api}/workflows/${id}`, {
-        ...workflow,
-        steps: sanitizedSteps,
+      await axios.post(`${api}/workflows/${workflowId}/steps`, {
+        name: newStepName.trim(),
+        step_type: newStepType,
+        order: steps.length + 1,
+        metadata: {},
       });
 
-      setMessage("Steps updated successfully");
+      setNewStepName("");
+      setNewStepType("task");
+      setMessage("Step added successfully");
       await loadWorkflow();
+      await loadSteps();
     } catch (error) {
-      console.log("Error saving steps:", error);
-      setMessage("Failed to save steps");
-    } finally {
-      setSaving(false);
+      console.log("Error adding step:", error);
+      setMessage(error?.response?.data?.message || "Failed to add step");
     }
   };
 
-  const handleEnterAdd = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      addStep();
+  const deleteStep = async (id) => {
+    try {
+      await axios.delete(`${api}/steps/${id}`);
+      setMessage("Step deleted successfully");
+      await loadWorkflow();
+      await loadSteps();
+    } catch (error) {
+      console.log("Error deleting step:", error);
+      setMessage(error?.response?.data?.message || "Failed to delete step");
     }
   };
 
@@ -107,77 +88,86 @@ function StepManager() {
             <p className="mini-title">Step Manager</p>
             <h1>Manage workflow steps</h1>
             <p className="hero-text">
-              Add, remove, reorder visually, and save workflow steps for this workflow.
+              Add, remove, and manage workflow steps for this workflow.
             </p>
           </div>
         </section>
 
         {message && <div className="message-box">{message}</div>}
 
-        <div className="card">
+        <div className="card" style={{ maxWidth: "900px", margin: "0 auto" }}>
           <div className="section-header">
-            <h2>
-              Workflow: {loading ? "Loading..." : workflow?.name || "Unknown Workflow"}
-            </h2>
-            <span className="pill blue">{sanitizedSteps.length}</span>
+            <h2>Workflow: {workflow?.name || "Loading..."}</h2>
+            <span className="pill blue">{steps.length}</span>
           </div>
 
-          <label>Add New Step</label>
-          <div className="step-input-row">
-            <input
-              type="text"
-              placeholder="Enter step name"
-              value={newStep}
-              onChange={(e) => setNewStep(e.target.value)}
-              onKeyDown={handleEnterAdd}
-              className="step-input"
-            />
+          <label>Step Name</label>
+          <input
+            type="text"
+            placeholder="Enter step name"
+            value={newStepName}
+            onChange={(e) => setNewStepName(e.target.value)}
+          />
 
-            <button
-              className="edit-btn"
-              onClick={addStep}
-              type="button"
-            >
-              Add
-            </button>
-          </div>
-
-          <h3 className="step-section-title">Current Steps</h3>
-
-          {loading ? (
-            <p className="empty-text">Loading steps...</p>
-          ) : sanitizedSteps.length === 0 ? (
-            <p className="empty-text">No steps added yet.</p>
-          ) : (
-            <div className="step-list">
-              {sanitizedSteps.map((step, index) => (
-                <div key={`${step}-${index}`} className="step-row">
-                  <div className="step-left">
-                    <span className="step-number">{index + 1}</span>
-                    <span className="step-text">{step}</span>
-                  </div>
-
-                  <button
-                    className="step-remove-btn"
-                    onClick={() => removeStep(index)}
-                    type="button"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+          <label>Step Type</label>
+          <select
+            value={newStepType}
+            onChange={(e) => setNewStepType(e.target.value)}
+          >
+            <option value="task">Task</option>
+            <option value="approval">Approval</option>
+            <option value="notification">Notification</option>
+          </select>
 
           <button
             className="start-btn"
-            style={{ marginTop: "20px" }}
-            onClick={saveSteps}
-            disabled={saving || loading}
-            type="button"
+            onClick={addStep}
+            style={{ marginTop: "16px", marginBottom: "24px" }}
           >
-            {saving ? "Saving..." : "Save Steps"}
+            Add Step
           </button>
+
+          <div className="history-list">
+            {steps.length === 0 ? (
+              <p className="empty-text">No steps found.</p>
+            ) : (
+              steps.map((step, index) => (
+                <div key={step._id || step.step_id} className="history-card">
+                  <div className="history-top">
+                    <span className="history-id">
+                      {index + 1}. {step.name}
+                    </span>
+                    <span className="pill blue">{step.step_type}</span>
+                  </div>
+
+                  <p className="muted">
+                    <strong>Step ID:</strong> {step.step_id || "-"}
+                  </p>
+
+                  <div
+                    className="workflow-action-group"
+                    style={{ marginTop: "12px" }}
+                  >
+                    <button
+                      className="edit-btn workflow-action-btn"
+                      onClick={() =>
+                        navigate(`/rules/${workflowId}/${step.step_id}`)
+                      }
+                    >
+                      Rules
+                    </button>
+
+                    <button
+                      className="delete-btn workflow-action-btn"
+                      onClick={() => deleteStep(step._id)}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
     </div>

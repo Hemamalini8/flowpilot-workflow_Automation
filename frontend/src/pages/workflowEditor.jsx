@@ -14,6 +14,7 @@ function WorkflowEditor() {
   const [departmentRequired, setDepartmentRequired] = useState(false);
   const [priorityRequired, setPriorityRequired] = useState(true);
   const [message, setMessage] = useState("");
+  const [workflow, setWorkflow] = useState(null);
 
   const api = "https://flowpilot-workflow-automation.onrender.com/api";
 
@@ -21,19 +22,15 @@ function WorkflowEditor() {
     if (!id) return;
 
     try {
-      const res = await axios.get(`${api}/workflows`);
-      const workflow = res.data.find((item) => item._id === id);
+      const res = await axios.get(`${api}/workflows/${id}`);
+      const workflowData = res.data;
 
-      if (!workflow) {
-        setMessage("Workflow not found");
-        return;
-      }
-
-      setName(workflow.name || "");
-      setAmountRequired(workflow.input_schema?.amount?.required ?? true);
-      setCountryRequired(workflow.input_schema?.country?.required ?? true);
-      setDepartmentRequired(workflow.input_schema?.department?.required ?? false);
-      setPriorityRequired(workflow.input_schema?.priority?.required ?? true);
+      setWorkflow(workflowData);
+      setName(workflowData.name || "");
+      setAmountRequired(workflowData.input_schema?.amount?.required ?? true);
+      setCountryRequired(workflowData.input_schema?.country?.required ?? true);
+      setDepartmentRequired(workflowData.input_schema?.department?.required ?? false);
+      setPriorityRequired(workflowData.input_schema?.priority?.required ?? true);
     } catch (error) {
       console.log("Error loading workflow:", error);
       setMessage("Failed to load workflow");
@@ -61,21 +58,27 @@ function WorkflowEditor() {
       },
     };
 
-    const payload = {
-      name: name.trim(),
-      steps: [],
-      input_schema,
-      version: 1,
-      is_active: true,
-      start_step_id: null,
-    };
-
     try {
       if (id) {
-        setMessage("updated");
-        return;
+        await axios.put(`${api}/workflows/${id}`, {
+          name: name.trim(),
+          input_schema,
+          is_active: workflow?.is_active ?? true,
+          start_step_id: workflow?.start_step_id ?? null,
+          steps: workflow?.steps ?? [],
+        });
+
+        setMessage("Workflow updated successfully");
       } else {
-        await axios.post(`${api}/workflows`, payload);
+        await axios.post(`${api}/workflows`, {
+          name: name.trim(),
+          input_schema,
+          steps: [],
+          version: 1,
+          is_active: true,
+          start_step_id: null,
+        });
+
         setMessage("Workflow created successfully");
       }
 
@@ -84,7 +87,7 @@ function WorkflowEditor() {
       }, 1000);
     } catch (error) {
       console.log("Error saving workflow:", error);
-      setMessage("Failed to save workflow");
+      setMessage(error?.response?.data?.message || "Failed to save workflow");
     }
   };
 

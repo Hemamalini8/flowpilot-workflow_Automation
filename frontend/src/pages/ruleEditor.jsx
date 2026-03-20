@@ -20,7 +20,7 @@ function RuleEditor() {
   const loadRules = async () => {
     try {
       const res = await axios.get(`${api}/steps/${stepId}/rules`);
-      setRules(res.data);
+      setRules(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
       console.log("Error loading rules:", error);
       setMessage("Failed to load rules");
@@ -30,18 +30,32 @@ function RuleEditor() {
   const loadSteps = async () => {
     try {
       const res = await axios.get(`${api}/workflows/${workflowId}/steps`);
-      setSteps(res.data);
+      setSteps(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
       console.log("Error loading steps:", error);
     }
   };
 
   useEffect(() => {
-    loadRules();
-    loadSteps();
+    if (stepId && workflowId) {
+      loadRules();
+      loadSteps();
+    }
   }, [stepId, workflowId]);
 
+  const resetForm = () => {
+    setCondition("");
+    setNextStepId("");
+    setPriority("");
+    setEditingId(null);
+  };
+
   const handleSaveRule = async () => {
+    if (!condition || !priority) {
+      setMessage("Condition and priority are required");
+      return;
+    }
+
     try {
       if (editingId) {
         await axios.put(`${api}/rules/${editingId}`, {
@@ -52,6 +66,7 @@ function RuleEditor() {
         setMessage("Rule updated successfully");
       } else {
         await axios.post(`${api}/steps/${stepId}/rules`, {
+          workflowId,
           condition,
           next_step_id: nextStepId || null,
           priority: Number(priority),
@@ -59,21 +74,18 @@ function RuleEditor() {
         setMessage("Rule created successfully");
       }
 
-      setCondition("");
-      setNextStepId("");
-      setPriority("");
-      setEditingId(null);
+      resetForm();
       loadRules();
     } catch (error) {
       console.log("Error saving rule:", error);
-      setMessage("Failed to save rule");
+      setMessage(error?.response?.data?.message || "Failed to save rule");
     }
   };
 
   const handleEdit = (rule) => {
-    setCondition(rule.condition);
-    setNextStepId(rule.next_step_id?._id || "");
-    setPriority(rule.priority);
+    setCondition(rule.condition || "");
+    setNextStepId(rule.next_step_id || "");
+    setPriority(rule.priority || "");
     setEditingId(rule._id);
   };
 
@@ -86,6 +98,18 @@ function RuleEditor() {
       console.log("Error deleting rule:", error);
       setMessage("Failed to delete rule");
     }
+  };
+
+  const getStepName = (stepIdValue) => {
+    if (!stepIdValue) return "End Workflow";
+
+    const found = steps.find((step, index) => {
+      const currentId =
+        step?.step_id || step?.id || step?._id?.toString() || `step${index + 1}`;
+      return String(currentId) === String(stepIdValue);
+    });
+
+    return found?.name || stepIdValue;
   };
 
   return (
@@ -113,7 +137,7 @@ function RuleEditor() {
               <label>Condition</label>
               <input
                 type="text"
-                placeholder='Example: amount > 5000 && country == "US"'
+                placeholder={`Example: amount > 5000 && country == 'US'`}
                 value={condition}
                 onChange={(e) => setCondition(e.target.value)}
               />
@@ -124,11 +148,16 @@ function RuleEditor() {
                 onChange={(e) => setNextStepId(e.target.value)}
               >
                 <option value="">End Workflow</option>
-                {steps.map((step) => (
-                  <option key={step._id} value={step._id}>
-                    {step.name}
-                  </option>
-                ))}
+                {steps.map((step, index) => {
+                  const value =
+                    step?.step_id || step?.id || step?._id?.toString() || `step${index + 1}`;
+
+                  return (
+                    <option key={value} value={value}>
+                      {step.name}
+                    </option>
+                  );
+                })}
               </select>
 
               <label>Priority</label>
@@ -139,9 +168,17 @@ function RuleEditor() {
                 onChange={(e) => setPriority(e.target.value)}
               />
 
-              <button className="start-btn" onClick={handleSaveRule}>
-                {editingId ? "Update Rule" : "Create Rule"}
-              </button>
+              <div className="button-group">
+                <button className="start-btn" onClick={handleSaveRule}>
+                  {editingId ? "Update Rule" : "Create Rule"}
+                </button>
+
+                {editingId && (
+                  <button className="reject-btn" onClick={resetForm}>
+                    Cancel Edit
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -163,36 +200,38 @@ function RuleEditor() {
                     </tr>
                   </thead>
                   <tbody>
-                    {rules.map((rule) => (
-                      <tr key={rule._id}>
-                        <td>{rule.priority}</td>
-                        <td>{rule.condition}</td>
-                        <td>{rule.next_step_id?.name || "End Workflow"}</td>
-                        <td>
-                          <button
-                            className="table-link-btn"
-                            onClick={() => handleEdit(rule)}
-                            style={{ marginRight: "8px", border: "none", cursor: "pointer" }}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            className="delete-btn"
-                            onClick={() => handleDelete(rule._id)}
-                          >
-                            Delete
-                          </button>
+                    {rules.length === 0 ? (
+                      <tr>
+                        <td colSpan="4" className="empty-row">
+                          No rules found.
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      rules.map((rule) => (
+                        <tr key={rule._id}>
+                          <td>{rule.priority}</td>
+                          <td>{rule.condition}</td>
+                          <td>{getStepName(rule.next_step_id)}</td>
+                          <td>
+                            <button
+                              className="table-link-btn"
+                              onClick={() => handleEdit(rule)}
+                              style={{ marginRight: "8px", border: "none", cursor: "pointer" }}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="delete-btn"
+                              onClick={() => handleDelete(rule._id)}
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
-
-                {rules.length === 0 && (
-                  <p className="empty-text" style={{ marginTop: "16px" }}>
-                    No rules found.
-                  </p>
-                )}
               </div>
             </div>
           </div>
