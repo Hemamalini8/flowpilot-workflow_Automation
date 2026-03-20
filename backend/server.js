@@ -12,22 +12,18 @@ import ruleRoutes from "./routes/ruleRoutes.js";
 
 const app = express();
 
-// middleware
 app.use(cors());
 app.use(express.json());
 
-// routes
-app.use("/api/workflows", workflowRoutes);
-app.use("/api/executions", executionRoutes);
 app.use("/api", stepRoutes);
 app.use("/api", ruleRoutes);
+app.use("/api/workflows", workflowRoutes);
+app.use("/api/executions", executionRoutes);
 
-// test route
 app.get("/", (req, res) => {
   res.send("FlowPilot API is running 🚀");
 });
 
-// connect DB
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
