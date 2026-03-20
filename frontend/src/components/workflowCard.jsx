@@ -5,7 +5,10 @@ function WorkflowCard({ workflow }) {
         <h3>{workflow.name}</h3>
         <span className="sub-pill">v{workflow.version}</span>
       </div>
-      <p className="muted">Steps: {workflow.steps.length}</p>
+
+      <p className="muted">
+        Steps: {Array.isArray(workflow.steps) ? workflow.steps.length : 0}
+      </p>
     </div>
   );
 }

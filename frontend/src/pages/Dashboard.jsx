@@ -26,21 +26,22 @@ function Dashboard() {
   };
 
   const getCurrentStepName = (exec) => {
-    if (!exec?.steps || exec.steps.length === 0) return "No steps";
+    if (!exec) return "No step";
+
     if (exec.status === "completed") return "Completed";
-    if (exec.status === "rejected") {
-      return exec.steps[exec.currentStepIndex] || "Rejected";
-    }
-    return exec.steps[exec.currentStepIndex] || "Not available";
+    if (exec.status === "rejected") return "Rejected";
+
+    return exec.currentStep || "Step 1";
   };
 
   const loadWorkflows = async () => {
     try {
       const res = await axios.get(`${api}/workflows`);
-      setWorkflows(res.data);
+      const workflowData = res.data || [];
+      setWorkflows(workflowData);
 
-      if (res.data.length > 0 && !selectedWorkflow) {
-        setSelectedWorkflow(res.data[0]._id);
+      if (workflowData.length > 0 && !selectedWorkflow) {
+        setSelectedWorkflow(workflowData[0]._id);
       }
     } catch (error) {
       console.log("Error loading workflows:", error);
@@ -51,7 +52,7 @@ function Dashboard() {
   const loadExecutions = async () => {
     try {
       const res = await axios.get(`${api}/executions`);
-      setExecutions(res.data);
+      setExecutions(res.data || []);
     } catch (error) {
       console.log("Error loading executions:", error);
       setMessage("Failed to load execution history");
