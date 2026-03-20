@@ -25,6 +25,17 @@ function evaluateRule(fieldValue, operator, compareValue) {
   }
 }
 
+// normalize step object safely
+function getStepId(step, index) {
+  if (!step) return `step${index + 1}`;
+  return step.step_id || step.id || step._id?.toString() || `step${index + 1}`;
+}
+
+function getStepName(step, index) {
+  if (!step) return `Step ${index + 1}`;
+  return step.name || step.step_id || step.id || `Step ${index + 1}`;
+}
+
 // START WORKFLOW EXECUTION
 router.post("/start", async (req, res) => {
   try {
@@ -45,12 +56,12 @@ router.post("/start", async (req, res) => {
 
     const execution = new Execution({
       workflow: workflow._id,
-      currentStep: firstStep.id || firstStep._id || "step1",
+      currentStep: getStepId(firstStep, 0),
       status: "in_progress",
       data: data || {},
       logs: [
         {
-          message: `Execution started. Current step: ${firstStep.name || "Step 1"}`
+          message: `Execution started. Current step: ${getStepName(firstStep, 0)}`
         }
       ]
     });
@@ -93,8 +104,12 @@ router.post("/approve", async (req, res) => {
 
     const steps = Array.isArray(workflow.steps) ? workflow.steps : [];
 
+    if (steps.length === 0) {
+      return res.status(400).json({ message: "No steps found in workflow" });
+    }
+
     const currentIndex = steps.findIndex(
-      (step) => String(step.id || step._id) === String(execution.currentStep)
+      (step, index) => String(getStepId(step, index)) === String(execution.currentStep)
     );
 
     if (currentIndex === -1) {
@@ -104,15 +119,12 @@ router.post("/approve", async (req, res) => {
     const currentStep = steps[currentIndex];
 
     execution.logs.push({
-      message: `Step approved: ${currentStep.name || "Unknown Step"}`
+      message: `Step approved: ${getStepName(currentStep, currentIndex)}`
     });
 
-    // optional rule check
     let nextStep = null;
 
-    const rule = await Rule.findOne({
-      workflow: workflow._id
-    });
+    const rule = await Rule.findOne({ workflow: workflow._id });
 
     if (rule && rule.field && rule.operator) {
       const fieldValue = execution.data?.[rule.field];
@@ -124,25 +136,31 @@ router.post("/approve", async (req, res) => {
 
       if (matched && rule.trueNextStep) {
         nextStep = steps.find(
-          (step) => String(step.id || step._id) === String(rule.trueNextStep)
+          (step, index) => String(getStepId(step, index)) === String(rule.trueNextStep)
         );
       } else if (!matched && rule.falseNextStep) {
         nextStep = steps.find(
-          (step) => String(step.id || step._id) === String(rule.falseNextStep)
+          (step, index) => String(getStepId(step, index)) === String(rule.falseNextStep)
         );
       }
     }
 
-    // fallback: move to next step in order
     if (!nextStep) {
       nextStep = steps[currentIndex + 1];
     }
 
     if (nextStep) {
-      execution.currentStep = nextStep.id || nextStep._id || "step1";
+      const nextIndex = steps.findIndex(
+        (step, index) => String(getStepId(step, index)) === String(getStepId(nextStep, index))
+      );
+
+      execution.currentStep = getStepId(nextStep, nextIndex >= 0 ? nextIndex : currentIndex + 1);
       execution.status = "in_progress";
       execution.logs.push({
-        message: `Moved to next step: ${nextStep.name || "Next Step"}`
+        message: `Moved to next step: ${getStepName(
+          nextStep,
+          nextIndex >= 0 ? nextIndex : currentIndex + 1
+        )}`
       });
     } else {
       execution.status = "completed";
@@ -188,13 +206,15 @@ router.post("/reject", async (req, res) => {
     }
 
     const steps = Array.isArray(workflow.steps) ? workflow.steps : [];
-    const currentStep = steps.find(
-      (step) => String(step.id || step._id) === String(execution.currentStep)
+    const currentIndex = steps.findIndex(
+      (step, index) => String(getStepId(step, index)) === String(execution.currentStep)
     );
+
+    const currentStep = currentIndex >= 0 ? steps[currentIndex] : null;
 
     execution.status = "rejected";
     execution.logs.push({
-      message: `Step rejected: ${currentStep ? currentStep.name : "Unknown Step"}`
+      message: `Step rejected: ${currentStep ? getStepName(currentStep, currentIndex) : "Unknown Step"}`
     });
 
     await execution.save();
