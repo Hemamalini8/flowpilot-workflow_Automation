@@ -5,8 +5,8 @@ import Dashboard from "./pages/Dashboard";
 import WorkflowList from "./pages/WorkflowList";
 import WorkflowEditor from "./pages/WorkflowEditor";
 import StepManager from "./pages/StepManager";
-import RuleEditor from "./pages/ruleEditor";
-import AuditLog from "./pages/auditlog";
+import RuleEditor from "./pages/RuleEditor";
+import AuditLog from "./pages/AuditLog";
 
 function App() {
   return (

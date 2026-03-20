@@ -195,7 +195,9 @@ function StepManager() {
                     <button
                       className="edit-btn workflow-action-btn"
                       onClick={() =>
-                        navigate(`/rules/${currentWorkflowId}/${step.step_id}`)
+                        navigate(
+                          `/rules/${currentWorkflowId}/${encodeURIComponent(step.step_id)}`
+                        )
                       }
                     >
                       Rules
