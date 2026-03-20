@@ -19,11 +19,9 @@ function App() {
         <Route path="/workflow-editor" element={<WorkflowEditor />} />
         <Route path="/workflow-editor/:id" element={<WorkflowEditor />} />
         <Route path="/steps/:workflowId" element={<StepManager />} />
-
         <Route path="/rules/:workflowId/:stepId" element={<RuleEditor />} />
-        <Route path="/rules/:workflowId" element={<RuleEditor />} />
-
-        <Route path="/audit-log" element={<AuditLog />} />
+        <Route path="/rules/:workflowId" element={<ruleEditor />} />
+        <Route path="/audit-log" element={<auditLog />} />
       </Routes>
     </BrowserRouter>
   );
