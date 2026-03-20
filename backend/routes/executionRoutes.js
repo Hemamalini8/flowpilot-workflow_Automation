@@ -53,7 +53,6 @@ router.post("/start", async (req, res) => {
       return res.status(400).json({ message: "No steps found in this workflow" });
     }
 
-    // use start_step_id first, otherwise fallback to first step
     const firstStep =
       steps.find(
         (step, index) =>
@@ -250,7 +249,7 @@ router.post("/reject", async (req, res) => {
 // GET EXECUTION BY ID
 router.get("/:id", async (req, res) => {
   try {
-    const execution = await Execution.findById(req.params.id).populate("workflow");
+    const execution = await Execution.findById(req.params.id);
 
     if (!execution) {
       return res.status(404).json({ message: "Execution not found" });
@@ -265,10 +264,7 @@ router.get("/:id", async (req, res) => {
 // GET ALL EXECUTIONS
 router.get("/", async (req, res) => {
   try {
-    const executions = await Execution.find()
-      .populate("workflow")
-      .sort({ createdAt: -1 });
-
+    const executions = await Execution.find().sort({ createdAt: -1 });
     res.json(executions);
   } catch (error) {
     res.status(500).json({ error: error.message });
