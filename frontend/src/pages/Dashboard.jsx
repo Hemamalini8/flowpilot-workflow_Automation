@@ -17,7 +17,7 @@ function Dashboard() {
   const [executions, setExecutions] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const api = "https://flowpilot-workflow-automation.onrender.com";
+  const api = "https://flowpilot-workflow-automation.onrender.com/api";
 
   const getStatusClass = (status) => {
     if (status === "completed") return "status completed";
@@ -214,6 +214,7 @@ function Dashboard() {
                 value={selectedWorkflow}
                 onChange={(e) => setSelectedWorkflow(e.target.value)}
               >
+                <option value="">Select workflow</option>
                 {workflows.map((workflow) => (
                   <option key={workflow._id} value={workflow._id}>
                     {workflow.name}

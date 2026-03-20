@@ -14,7 +14,8 @@ function StepManager() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const api = "https://flowpilot-workflow-automation.onrender.com";
+  const api = "https://flowpilot-workflow-automation.onrender.com/api";
+
   const sanitizedSteps = useMemo(() => {
     return (steps || [])
       .map((step) => String(step).trim())

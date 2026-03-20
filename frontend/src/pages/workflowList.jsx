@@ -10,7 +10,8 @@ function WorkflowList() {
   const [message, setMessage] = useState("");
   const navigate = useNavigate();
 
-  const api = "https://flowpilot-workflow-automation.onrender.com";
+  const api = "https://flowpilot-workflow-automation.onrender.com/api";
+
   const loadWorkflows = async () => {
     try {
       const res = await axios.get(`${api}/workflows`);

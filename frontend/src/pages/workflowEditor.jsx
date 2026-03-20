@@ -15,7 +15,8 @@ function WorkflowEditor() {
   const [priorityRequired, setPriorityRequired] = useState(true);
   const [message, setMessage] = useState("");
 
-const api = "https://flowpilot-workflow-automation.onrender.com";
+  const api = "https://flowpilot-workflow-automation.onrender.com/api";
+
   const loadWorkflow = async () => {
     if (!id) return;
 
