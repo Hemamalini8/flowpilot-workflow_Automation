@@ -8,7 +8,7 @@ const Execution = require("../models/execution");
 // CREATE WORKFLOW
 router.post("/", async (req, res) => {
   try {
-    const { name, input_schema } = req.body;
+    const { name, input_schema, steps, start_step_id } = req.body;
 
     const workflow = new Workflow({
       name,
@@ -22,6 +22,10 @@ router.post("/", async (req, res) => {
           allowed_values: ["High", "Medium", "Low"],
         },
       },
+      steps: Array.isArray(steps) ? steps : [],
+      start_step_id:
+        start_step_id ||
+        (Array.isArray(steps) && steps.length > 0 ? steps[0].step_id : null),
     });
 
     await workflow.save();
@@ -38,7 +42,21 @@ router.post("/", async (req, res) => {
 // LIST WORKFLOWS
 router.get("/", async (req, res) => {
   try {
-    const workflows = await Workflow.find().sort({ createdAt: -1 });
+    const { search = "", status = "" } = req.query;
+
+    const query = {};
+
+    if (search) {
+      query.name = { $regex: search, $options: "i" };
+    }
+
+    if (status === "active") {
+      query.is_active = true;
+    } else if (status === "inactive") {
+      query.is_active = false;
+    }
+
+    const workflows = await Workflow.find(query).sort({ createdAt: -1 });
     res.json(workflows);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -75,6 +93,8 @@ router.put("/:id", async (req, res) => {
         name: req.body.name ?? oldWorkflow.name,
         input_schema: req.body.input_schema ?? oldWorkflow.input_schema,
         is_active: req.body.is_active ?? oldWorkflow.is_active,
+        start_step_id: req.body.start_step_id ?? oldWorkflow.start_step_id,
+        steps: req.body.steps ?? oldWorkflow.steps,
         version: oldWorkflow.version + 1,
       },
       { new: true }
@@ -99,11 +119,8 @@ router.delete("/:id", async (req, res) => {
     }
 
     await Step.deleteMany({ workflow: workflow._id });
-
-    const workflowSteps = workflow.steps || [];
-    await Rule.deleteMany({ fromStep: { $in: workflowSteps } });
+    await Rule.deleteMany({ workflow: workflow._id });
     await Execution.deleteMany({ workflow: workflow._id });
-
     await Workflow.findByIdAndDelete(req.params.id);
 
     res.json({ message: "Workflow deleted successfully" });

@@ -15,13 +15,17 @@ const executionSchema = new mongoose.Schema(
       ref: "Workflow",
       required: true
     },
+    workflow_version: {
+      type: Number,
+      default: 1
+    },
     currentStep: {
       type: String,
       required: true
     },
     status: {
       type: String,
-      enum: ["in_progress", "completed", "rejected"],
+      enum: ["in_progress", "completed", "rejected", "failed", "canceled"],
       default: "in_progress"
     },
     data: {
@@ -31,6 +35,22 @@ const executionSchema = new mongoose.Schema(
     logs: {
       type: [logSchema],
       default: []
+    },
+    retries: {
+      type: Number,
+      default: 0
+    },
+    triggered_by: {
+      type: String,
+      default: "user"
+    },
+    started_at: {
+      type: Date,
+      default: Date.now
+    },
+    ended_at: {
+      type: Date,
+      default: null
     }
   },
   {

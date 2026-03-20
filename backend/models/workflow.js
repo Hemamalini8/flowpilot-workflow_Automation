@@ -1,10 +1,42 @@
 const mongoose = require("mongoose");
 
+const workflowStepSchema = new mongoose.Schema(
+  {
+    step_id: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    step_type: {
+      type: String,
+      enum: ["task", "approval", "notification"],
+      required: true,
+      default: "task",
+    },
+    order: {
+      type: Number,
+      required: true,
+      default: 1,
+    },
+    metadata: {
+      type: Object,
+      default: {},
+    },
+  },
+  { _id: false }
+);
+
 const workflowSchema = new mongoose.Schema(
   {
     name: {
       type: String,
       required: true,
+      trim: true,
     },
     version: {
       type: Number,
@@ -28,16 +60,13 @@ const workflowSchema = new mongoose.Schema(
       },
     },
     start_step_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Step",
+      type: String,
       default: null,
     },
-    steps: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Step",
-      },
-    ],
+    steps: {
+      type: [workflowStepSchema],
+      default: [],
+    },
   },
   { timestamps: true }
 );

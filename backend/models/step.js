@@ -7,9 +7,15 @@ const stepSchema = new mongoose.Schema(
       ref: "Workflow",
       required: true,
     },
+    step_id: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     name: {
       type: String,
       required: true,
+      trim: true,
     },
     step_type: {
       type: String,
@@ -19,6 +25,7 @@ const stepSchema = new mongoose.Schema(
     order: {
       type: Number,
       required: true,
+      default: 1,
     },
     metadata: {
       type: Object,

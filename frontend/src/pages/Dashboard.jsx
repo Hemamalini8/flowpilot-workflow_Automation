@@ -22,6 +22,7 @@ function Dashboard() {
   const getStatusClass = (status) => {
     if (status === "completed") return "status completed";
     if (status === "rejected") return "status rejected";
+    if (status === "canceled") return "status rejected";
     return "status progress";
   };
 
@@ -41,6 +42,7 @@ function Dashboard() {
 
     if (exec.status === "completed") return "Completed";
     if (exec.status === "rejected") return "Rejected";
+    if (exec.status === "canceled") return "Canceled";
 
     const workflow = getWorkflowById(exec.workflow);
 
@@ -48,13 +50,11 @@ function Dashboard() {
       return exec.currentStep || "No steps";
     }
 
-    const currentStep = workflow.steps.find(
-      (step, index) => {
-        const stepId =
-          step?.step_id || step?.id || step?._id?.toString() || `step${index + 1}`;
-        return String(stepId) === String(exec.currentStep);
-      }
-    );
+    const currentStep = workflow.steps.find((step, index) => {
+      const stepId =
+        step?.step_id || step?.id || step?._id?.toString() || `step${index + 1}`;
+      return String(stepId) === String(exec.currentStep);
+    });
 
     if (currentStep) {
       return currentStep.name || currentStep.step_id || currentStep.id || exec.currentStep;
@@ -97,6 +97,8 @@ function Dashboard() {
       } else {
         setExecution(null);
       }
+
+      setMessage("");
     } catch (error) {
       console.log("Error loading executions:", error);
       setMessage("Failed to load execution history");
@@ -137,9 +139,7 @@ function Dashboard() {
       await loadExecutions();
     } catch (error) {
       console.log("Error starting workflow:", error);
-      setMessage(
-        error?.response?.data?.message || "Failed to start workflow"
-      );
+      setMessage(error?.response?.data?.message || "Failed to start workflow");
     } finally {
       setLoading(false);
     }
@@ -160,9 +160,7 @@ function Dashboard() {
       await loadExecutions();
     } catch (error) {
       console.log("Error approving step:", error);
-      setMessage(
-        error?.response?.data?.message || "Failed to approve step"
-      );
+      setMessage(error?.response?.data?.message || "Failed to approve step");
     } finally {
       setLoading(false);
     }
@@ -183,9 +181,43 @@ function Dashboard() {
       await loadExecutions();
     } catch (error) {
       console.log("Error rejecting step:", error);
-      setMessage(
-        error?.response?.data?.message || "Failed to reject step"
-      );
+      setMessage(error?.response?.data?.message || "Failed to reject step");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const retryExecution = async () => {
+    if (!execution?._id) return;
+
+    try {
+      setLoading(true);
+
+      const res = await axios.post(`${api}/executions/${execution._id}/retry`);
+      setExecution(res.data.execution);
+      setMessage(res.data.message || "Execution retried");
+      await loadExecutions();
+    } catch (error) {
+      console.log("Error retrying execution:", error);
+      setMessage(error?.response?.data?.message || "Failed to retry execution");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cancelExecution = async () => {
+    if (!execution?._id) return;
+
+    try {
+      setLoading(true);
+
+      const res = await axios.post(`${api}/executions/${execution._id}/cancel`);
+      setExecution(res.data.execution);
+      setMessage(res.data.message || "Execution canceled");
+      await loadExecutions();
+    } catch (error) {
+      console.log("Error canceling execution:", error);
+      setMessage(error?.response?.data?.message || "Failed to cancel execution");
     } finally {
       setLoading(false);
     }
@@ -198,7 +230,9 @@ function Dashboard() {
   };
 
   const executionFinished =
-    execution?.status === "completed" || execution?.status === "rejected";
+    execution?.status === "completed" ||
+    execution?.status === "rejected" ||
+    execution?.status === "canceled";
 
   return (
     <div className="dashboard-page">
@@ -346,6 +380,16 @@ function Dashboard() {
                     </div>
 
                     <div className="detail-box">
+                      <span className="detail-label">Workflow Version</span>
+                      <span className="detail-value">{execution.workflow_version ?? "-"}</span>
+                    </div>
+
+                    <div className="detail-box">
+                      <span className="detail-label">Retries</span>
+                      <span className="detail-value">{execution.retries ?? 0}</span>
+                    </div>
+
+                    <div className="detail-box">
                       <span className="detail-label">Amount</span>
                       <span className="detail-value">{execution.data?.amount ?? "-"}</span>
                     </div>
@@ -382,6 +426,22 @@ function Dashboard() {
                     >
                       Reject
                     </button>
+
+                    <button
+                      className="approve-btn"
+                      onClick={retryExecution}
+                      disabled={loading}
+                    >
+                      Retry
+                    </button>
+
+                    <button
+                      className="reject-btn"
+                      onClick={cancelExecution}
+                      disabled={loading || executionFinished}
+                    >
+                      Cancel
+                    </button>
                   </div>
 
                   <h3 className="logs-title">Execution Logs</h3>
@@ -390,7 +450,10 @@ function Dashboard() {
                     {execution.logs?.length > 0 ? (
                       <ul>
                         {execution.logs.map((log, i) => (
-                          <li key={i}>{log.message}</li>
+                          <li key={i}>
+                            {log.message}
+                            {log.timestamp ? ` - ${new Date(log.timestamp).toLocaleString()}` : ""}
+                          </li>
                         ))}
                       </ul>
                     ) : (
@@ -431,6 +494,9 @@ function Dashboard() {
                       </p>
                       <p className="muted">
                         <strong>Priority:</strong> {item.data?.priority || "-"}
+                      </p>
+                      <p className="muted">
+                        <strong>Version:</strong> {item.workflow_version ?? "-"}
                       </p>
                     </div>
                   ))

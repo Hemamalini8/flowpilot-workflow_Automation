@@ -5,27 +5,6 @@ const Workflow = require("../models/workflow");
 const Execution = require("../models/execution");
 const Rule = require("../models/rule");
 
-// helper function
-function evaluateRule(fieldValue, operator, compareValue) {
-  switch (operator) {
-    case ">":
-      return fieldValue > compareValue;
-    case "<":
-      return fieldValue < compareValue;
-    case ">=":
-      return fieldValue >= compareValue;
-    case "<=":
-      return fieldValue <= compareValue;
-    case "==":
-      return fieldValue == compareValue;
-    case "!=":
-      return fieldValue != compareValue;
-    default:
-      return false;
-  }
-}
-
-// normalize step object safely
 function getStepId(step, index) {
   if (!step) return `step${index + 1}`;
   return step.step_id || step.id || step._id?.toString() || `step${index + 1}`;
@@ -34,6 +13,43 @@ function getStepId(step, index) {
 function getStepName(step, index) {
   if (!step) return `Step ${index + 1}`;
   return step.name || step.step_id || step.id || `Step ${index + 1}`;
+}
+
+function evaluateCondition(condition, data) {
+  if (!condition || condition.trim() === "") return false;
+  if (condition.trim().toUpperCase() === "DEFAULT") return true;
+
+  try {
+    let expression = condition;
+
+    expression = expression.replace(
+      /\bcontains\((\w+),\s*['"]([^'"]+)['"]\)/g,
+      (_, field, value) =>
+        `(String(data["${field}"] || "").includes("${value}"))`
+    );
+
+    expression = expression.replace(
+      /\bstartsWith\((\w+),\s*['"]([^'"]+)['"]\)/g,
+      (_, field, value) =>
+        `(String(data["${field}"] || "").startsWith("${value}"))`
+    );
+
+    expression = expression.replace(
+      /\bendsWith\((\w+),\s*['"]([^'"]+)['"]\)/g,
+      (_, field, value) =>
+        `(String(data["${field}"] || "").endsWith("${value}"))`
+    );
+
+    expression = expression.replace(
+      /\b(amount|country|department|priority)\b/g,
+      'data["$1"]'
+    );
+
+    // eslint-disable-next-line no-new-func
+    return Function("data", `return (${expression});`)(data || {});
+  } catch (error) {
+    return false;
+  }
 }
 
 // START WORKFLOW EXECUTION
@@ -66,24 +82,28 @@ router.post("/start", async (req, res) => {
 
     const execution = new Execution({
       workflow: workflow._id,
+      workflow_version: workflow.version || 1,
       currentStep: getStepId(firstStep, firstStepIndex >= 0 ? firstStepIndex : 0),
       status: "in_progress",
       data: data || {},
+      retries: 0,
+      started_at: new Date(),
       logs: [
         {
           message: `Execution started. Current step: ${getStepName(
             firstStep,
             firstStepIndex >= 0 ? firstStepIndex : 0
-          )}`
-        }
-      ]
+          )}`,
+          timestamp: new Date(),
+        },
+      ],
     });
 
     await execution.save();
 
     res.json({
       message: "Workflow execution started",
-      execution
+      execution,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -122,7 +142,8 @@ router.post("/approve", async (req, res) => {
     }
 
     const currentIndex = steps.findIndex(
-      (step, index) => String(getStepId(step, index)) === String(execution.currentStep)
+      (step, index) =>
+        String(getStepId(step, index)) === String(execution.currentStep)
     );
 
     if (currentIndex === -1) {
@@ -132,39 +153,49 @@ router.post("/approve", async (req, res) => {
     const currentStep = steps[currentIndex];
 
     execution.logs.push({
-      message: `Step approved: ${getStepName(currentStep, currentIndex)}`
+      message: `Step approved: ${getStepName(currentStep, currentIndex)}`,
+      timestamp: new Date(),
     });
 
     let nextStep = null;
 
-    const rule = await Rule.findOne({ workflow: workflow._id });
+    const rules = await Rule.find({
+      workflow: workflow._id,
+      step_id: getStepId(currentStep, currentIndex),
+    }).sort({ priority: 1 });
 
-    if (rule && rule.field && rule.operator) {
-      const fieldValue = execution.data?.[rule.field];
-      const matched = evaluateRule(fieldValue, rule.operator, rule.value);
+    if (rules.length > 0) {
+      for (const rule of rules) {
+        const matched = evaluateCondition(rule.condition, execution.data || {});
 
-      execution.logs.push({
-        message: `Rule checked: ${rule.field} ${rule.operator} ${rule.value} = ${matched}`
-      });
+        execution.logs.push({
+          message: `Rule checked: ${rule.condition} = ${matched}`,
+          timestamp: new Date(),
+        });
 
-      if (matched && rule.trueNextStep) {
-        nextStep = steps.find(
-          (step, index) => String(getStepId(step, index)) === String(rule.trueNextStep)
-        );
-      } else if (!matched && rule.falseNextStep) {
-        nextStep = steps.find(
-          (step, index) => String(getStepId(step, index)) === String(rule.falseNextStep)
-        );
+        if (matched) {
+          if (rule.next_step_id) {
+            nextStep = steps.find(
+              (step, index) =>
+                String(getStepId(step, index)) === String(rule.next_step_id)
+            );
+          } else {
+            nextStep = null;
+          }
+          break;
+        }
       }
     }
 
-    if (!nextStep) {
+    if (!rules.length && !nextStep) {
       nextStep = steps[currentIndex + 1];
     }
 
     if (nextStep) {
       const nextIndex = steps.findIndex(
-        (step, index) => String(getStepId(step, index)) === String(getStepId(nextStep, index))
+        (step, index) =>
+          String(getStepId(step, index)) ===
+          String(getStepId(nextStep, index))
       );
 
       execution.currentStep = getStepId(
@@ -172,16 +203,21 @@ router.post("/approve", async (req, res) => {
         nextIndex >= 0 ? nextIndex : currentIndex + 1
       );
       execution.status = "in_progress";
+
       execution.logs.push({
         message: `Moved to next step: ${getStepName(
           nextStep,
           nextIndex >= 0 ? nextIndex : currentIndex + 1
-        )}`
+        )}`,
+        timestamp: new Date(),
       });
     } else {
       execution.status = "completed";
+      execution.ended_at = new Date();
+
       execution.logs.push({
-        message: "Workflow completed"
+        message: "Workflow completed",
+        timestamp: new Date(),
       });
     }
 
@@ -189,7 +225,7 @@ router.post("/approve", async (req, res) => {
 
     res.json({
       message: "Step approved successfully",
-      execution
+      execution,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -223,23 +259,84 @@ router.post("/reject", async (req, res) => {
 
     const steps = Array.isArray(workflow.steps) ? workflow.steps : [];
     const currentIndex = steps.findIndex(
-      (step, index) => String(getStepId(step, index)) === String(execution.currentStep)
+      (step, index) =>
+        String(getStepId(step, index)) === String(execution.currentStep)
     );
 
     const currentStep = currentIndex >= 0 ? steps[currentIndex] : null;
 
     execution.status = "rejected";
+    execution.ended_at = new Date();
+
     execution.logs.push({
       message: `Step rejected: ${
         currentStep ? getStepName(currentStep, currentIndex) : "Unknown Step"
-      }`
+      }`,
+      timestamp: new Date(),
     });
 
     await execution.save();
 
     res.json({
       message: "Workflow rejected successfully",
-      execution
+      execution,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// RETRY EXECUTION
+router.post("/:id/retry", async (req, res) => {
+  try {
+    const execution = await Execution.findById(req.params.id);
+
+    if (!execution) {
+      return res.status(404).json({ message: "Execution not found" });
+    }
+
+    execution.status = "in_progress";
+    execution.retries = (execution.retries || 0) + 1;
+    execution.ended_at = null;
+
+    execution.logs.push({
+      message: `Execution retried. Retry count: ${execution.retries}`,
+      timestamp: new Date(),
+    });
+
+    await execution.save();
+
+    res.json({
+      message: "Execution retried successfully",
+      execution,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// CANCEL EXECUTION
+router.post("/:id/cancel", async (req, res) => {
+  try {
+    const execution = await Execution.findById(req.params.id);
+
+    if (!execution) {
+      return res.status(404).json({ message: "Execution not found" });
+    }
+
+    execution.status = "canceled";
+    execution.ended_at = new Date();
+
+    execution.logs.push({
+      message: "Execution canceled",
+      timestamp: new Date(),
+    });
+
+    await execution.save();
+
+    res.json({
+      message: "Execution canceled successfully",
+      execution,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

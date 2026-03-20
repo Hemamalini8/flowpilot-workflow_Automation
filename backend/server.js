@@ -1,11 +1,14 @@
 import dotenv from "dotenv";
 dotenv.config();
+
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 
 import workflowRoutes from "./routes/workflowRoutes.js";
 import executionRoutes from "./routes/executionRoutes.js";
+import stepRoutes from "./routes/stepRoutes.js";
+import ruleRoutes from "./routes/ruleRoutes.js";
 
 const app = express();
 
@@ -16,6 +19,8 @@ app.use(express.json());
 // routes
 app.use("/api/workflows", workflowRoutes);
 app.use("/api/executions", executionRoutes);
+app.use("/api", stepRoutes);
+app.use("/api", ruleRoutes);
 
 // test route
 app.get("/", (req, res) => {
