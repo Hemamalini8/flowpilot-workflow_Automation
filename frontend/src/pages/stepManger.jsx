@@ -5,7 +5,8 @@ import "../styles/Dashboard.css";
 import "../styles/Components.css";
 
 function StepManager() {
-  const { workflowId } = useParams();
+  const { workflowId, id } = useParams();
+  const currentWorkflowId = workflowId || id;
   const navigate = useNavigate();
 
   const [workflow, setWorkflow] = useState(null);
@@ -18,7 +19,7 @@ function StepManager() {
 
   const loadWorkflow = async () => {
     try {
-      const res = await axios.get(`${api}/workflows/${workflowId}`);
+      const res = await axios.get(`${api}/workflows/${currentWorkflowId}`);
       setWorkflow(res.data || null);
     } catch (error) {
       console.log("Error loading workflow:", error);
@@ -28,7 +29,7 @@ function StepManager() {
 
   const loadSteps = async () => {
     try {
-      const res = await axios.get(`${api}/workflows/${workflowId}/steps`);
+      const res = await axios.get(`${api}/workflows/${currentWorkflowId}/steps`);
       setSteps(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
       console.log("Error loading steps:", error);
@@ -37,11 +38,11 @@ function StepManager() {
   };
 
   useEffect(() => {
-    if (workflowId) {
+    if (currentWorkflowId) {
       loadWorkflow();
       loadSteps();
     }
-  }, [workflowId]);
+  }, [currentWorkflowId]);
 
   const addStep = async () => {
     if (!newStepName.trim()) {
@@ -50,7 +51,7 @@ function StepManager() {
     }
 
     try {
-      await axios.post(`${api}/workflows/${workflowId}/steps`, {
+      await axios.post(`${api}/workflows/${currentWorkflowId}/steps`, {
         name: newStepName.trim(),
         step_type: newStepType,
         order: steps.length + 1,
@@ -151,7 +152,7 @@ function StepManager() {
                     <button
                       className="edit-btn workflow-action-btn"
                       onClick={() =>
-                        navigate(`/rules/${workflowId}/${step.step_id}`)
+                        navigate(`/rules/${currentWorkflowId}/${step.step_id}`)
                       }
                     >
                       Rules
