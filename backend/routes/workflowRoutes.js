@@ -38,7 +38,7 @@ router.post("/", async (req, res) => {
 // LIST WORKFLOWS
 router.get("/", async (req, res) => {
   try {
-    const workflows = await Workflow.find().populate("steps").sort({ createdAt: -1 });
+    const workflows = await Workflow.find().sort({ createdAt: -1 });
     res.json(workflows);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -48,7 +48,7 @@ router.get("/", async (req, res) => {
 // GET SINGLE WORKFLOW
 router.get("/:id", async (req, res) => {
   try {
-    const workflow = await Workflow.findById(req.params.id).populate("steps");
+    const workflow = await Workflow.findById(req.params.id);
 
     if (!workflow) {
       return res.status(404).json({ message: "Workflow not found" });
@@ -78,7 +78,7 @@ router.put("/:id", async (req, res) => {
         version: oldWorkflow.version + 1,
       },
       { new: true }
-    ).populate("steps");
+    );
 
     res.json({
       message: "Workflow updated successfully",

@@ -48,20 +48,34 @@ router.post("/start", async (req, res) => {
     }
 
     const steps = Array.isArray(workflow.steps) ? workflow.steps : [];
-    const firstStep = steps[0];
 
-    if (!firstStep) {
+    if (steps.length === 0) {
       return res.status(400).json({ message: "No steps found in this workflow" });
     }
 
+    // use start_step_id first, otherwise fallback to first step
+    const firstStep =
+      steps.find(
+        (step, index) =>
+          String(getStepId(step, index)) === String(workflow.start_step_id)
+      ) || steps[0];
+
+    const firstStepIndex = steps.findIndex(
+      (step, index) =>
+        String(getStepId(step, index)) === String(getStepId(firstStep, index))
+    );
+
     const execution = new Execution({
       workflow: workflow._id,
-      currentStep: getStepId(firstStep, 0),
+      currentStep: getStepId(firstStep, firstStepIndex >= 0 ? firstStepIndex : 0),
       status: "in_progress",
       data: data || {},
       logs: [
         {
-          message: `Execution started. Current step: ${getStepName(firstStep, 0)}`
+          message: `Execution started. Current step: ${getStepName(
+            firstStep,
+            firstStepIndex >= 0 ? firstStepIndex : 0
+          )}`
         }
       ]
     });
@@ -154,7 +168,10 @@ router.post("/approve", async (req, res) => {
         (step, index) => String(getStepId(step, index)) === String(getStepId(nextStep, index))
       );
 
-      execution.currentStep = getStepId(nextStep, nextIndex >= 0 ? nextIndex : currentIndex + 1);
+      execution.currentStep = getStepId(
+        nextStep,
+        nextIndex >= 0 ? nextIndex : currentIndex + 1
+      );
       execution.status = "in_progress";
       execution.logs.push({
         message: `Moved to next step: ${getStepName(
@@ -214,7 +231,9 @@ router.post("/reject", async (req, res) => {
 
     execution.status = "rejected";
     execution.logs.push({
-      message: `Step rejected: ${currentStep ? getStepName(currentStep, currentIndex) : "Unknown Step"}`
+      message: `Step rejected: ${
+        currentStep ? getStepName(currentStep, currentIndex) : "Unknown Step"
+      }`
     });
 
     await execution.save();
