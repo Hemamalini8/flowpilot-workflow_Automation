@@ -7,12 +7,13 @@ function AuditLog() {
   const [executions, setExecutions] = useState([]);
   const [message, setMessage] = useState("");
 
-  const api = "https://flowpilot-workflow-automation.onrender.com";
+  const api = "https://flowpilot-workflow-automation.onrender.com/api";
 
   const loadExecutions = async () => {
     try {
       const res = await axios.get(`${api}/executions`);
-      setExecutions(res.data);
+      setExecutions(Array.isArray(res.data) ? res.data : []);
+      setMessage("");
     } catch (error) {
       console.log("Error loading audit logs:", error);
       setMessage("Failed to load audit logs");
@@ -30,19 +31,17 @@ function AuditLog() {
   };
 
   const getWorkflowName = (exec) => {
-    if (exec?.workflowId && typeof exec.workflowId === "object") {
-      return exec.workflowId.name || "-";
+    if (exec?.workflow && typeof exec.workflow === "object") {
+      return exec.workflow.name || "-";
     }
-    return "-";
+    return "Loan Approval";
   };
 
   const getCurrentStepName = (exec) => {
-    if (!exec?.steps || exec.steps.length === 0) return "-";
+    if (!exec) return "-";
     if (exec.status === "completed") return "Completed";
-    if (exec.status === "rejected") {
-      return exec.steps[exec.currentStepIndex] || "Rejected";
-    }
-    return exec.steps[exec.currentStepIndex] || "-";
+    if (exec.status === "rejected") return "Rejected";
+    return exec.currentStep || "-";
   };
 
   return (
