@@ -21,6 +21,10 @@ function App() {
         <Route path="/steps/:workflowId" element={<StepManager />} />
         <Route path="/rules/:workflowId/:stepId" element={<RuleEditor />} />
         <Route path="/audit-log" element={<AuditLog />} />
+        <Route
+          path="*"
+          element={<div style={{ padding: "40px" }}>No route matched</div>}
+        />
       </Routes>
     </BrowserRouter>
   );
