@@ -3,10 +3,10 @@ import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import WorkflowList from "./pages/WorkflowList";
-import WorkflowEditor from "./pages/workflowEditor";
+import WorkflowEditor from "./pages/WorkflowEditor";
 import StepManager from "./pages/StepManager";
-import RuleEditor from "./pages/ruleEditor";
-import AuditLog from "./pages/auditlog";
+import RuleEditor from "./pages/RuleEditor";
+import AuditLog from "./pages/AuditLog";
 
 function App() {
   return (
@@ -16,14 +16,10 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/workflows" element={<WorkflowList />} />
-
         <Route path="/workflow-editor" element={<WorkflowEditor />} />
         <Route path="/workflow-editor/:id" element={<WorkflowEditor />} />
-
         <Route path="/steps/:workflowId" element={<StepManager />} />
-
         <Route path="/rules/:workflowId/:stepId" element={<RuleEditor />} />
-
         <Route path="/audit-log" element={<AuditLog />} />
       </Routes>
     </BrowserRouter>
