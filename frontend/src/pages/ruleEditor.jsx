@@ -19,27 +19,39 @@ function RuleEditor() {
 
   const api = "https://flowpilot-workflow-automation.onrender.com/api";
 
+  // DEBUG
+  console.log("workflowId =", workflowId);
+  console.log("stepId =", stepId);
+  console.log("api =", api);
+
   const loadSteps = async () => {
     try {
+      console.log("LOAD STEPS URL =", `${api}/workflows/${workflowId}/steps`);
       const res = await axios.get(`${api}/workflows/${workflowId}/steps`);
+      console.log("LOAD STEPS RESPONSE =", res.data);
       setSteps(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
-      console.log(error);
+      console.log("LOAD STEPS ERROR =", error);
+      console.log("LOAD STEPS ERROR DATA =", error?.response?.data);
       setMessage("Failed to load steps");
     }
   };
 
   const loadRules = async () => {
     try {
+      console.log("LOAD RULES URL =", `${api}/steps/${stepId}/rules`);
       const res = await axios.get(`${api}/steps/${stepId}/rules`);
+      console.log("LOAD RULES RESPONSE =", res.data);
       setRules(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
-      console.log(error);
+      console.log("LOAD RULES ERROR =", error);
+      console.log("LOAD RULES ERROR DATA =", error?.response?.data);
       setMessage("Failed to load rules");
     }
   };
 
   useEffect(() => {
+    console.log("useEffect running...");
     if (workflowId && stepId) {
       loadSteps();
       loadRules();
@@ -76,10 +88,14 @@ function RuleEditor() {
         priority: Number(priority),
       };
 
+      console.log("SAVE RULE PAYLOAD =", payload);
+
       if (editingId) {
+        console.log("UPDATE RULE URL =", `${api}/rules/${editingId}`);
         await axios.put(`${api}/rules/${editingId}`, payload);
         setMessage("Rule updated successfully");
       } else {
+        console.log("CREATE RULE URL =", `${api}/steps/${stepId}/rules`);
         await axios.post(`${api}/steps/${stepId}/rules`, payload);
         setMessage("Rule created successfully");
       }
@@ -87,7 +103,8 @@ function RuleEditor() {
       clearForm();
       await loadRules();
     } catch (error) {
-      console.log(error);
+      console.log("SAVE RULE ERROR =", error);
+      console.log("SAVE RULE ERROR DATA =", error?.response?.data);
       setMessage(
         error?.response?.data?.message ||
           error?.response?.data?.error ||
@@ -99,6 +116,7 @@ function RuleEditor() {
   };
 
   const editRule = (rule) => {
+    console.log("EDIT RULE =", rule);
     setEditingId(rule._id || "");
     setCondition(rule.condition || "");
     setPriority(rule.priority || "");
@@ -111,11 +129,13 @@ function RuleEditor() {
 
   const deleteRule = async (id) => {
     try {
+      console.log("DELETE RULE URL =", `${api}/rules/${id}`);
       await axios.delete(`${api}/rules/${id}`);
       setMessage("Rule deleted successfully");
       await loadRules();
     } catch (error) {
-      console.log(error);
+      console.log("DELETE RULE ERROR =", error);
+      console.log("DELETE RULE ERROR DATA =", error?.response?.data);
       setMessage("Failed to delete rule");
     }
   };
@@ -140,6 +160,10 @@ function RuleEditor() {
             <h2>{editingId ? "Edit Rule" : "Add Rule"}</h2>
             <span className="pill blue">{rules.length}</span>
           </div>
+
+          <p className="muted" style={{ marginBottom: "10px" }}>
+            Workflow ID: {workflowId || "-"}
+          </p>
 
           <p className="muted" style={{ marginBottom: "10px" }}>
             Step ID: {stepId || "-"}
