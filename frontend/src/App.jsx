@@ -2,8 +2,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
-import WorkflowList from "./pages/workflowList";        // ✅ fixed
-import WorkflowEditor from "./pages/workflowEditor";    // ✅ fixed
+import WorkflowList from "./pages/workflowList";
+import WorkflowEditor from "./pages/workflowEditor";
 import StepManager from "./pages/StepManager";
 import RuleEditor from "./pages/ruleEditor";
 import AuditLog from "./pages/auditlog";
@@ -16,17 +16,10 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/workflows" element={<WorkflowList />} />
-
         <Route path="/workflow-editor" element={<WorkflowEditor />} />
-        <Route path="/workflow-editor/:id" element={<WorkflowEditor />} />  {/* ✅ fixed */}
-
+        <Route path="/workflow-editor/:id" element={<WorkflowEditor />} />
         <Route path="/steps/:workflowId" element={<StepManager />} />
-
-        <Route path="/rules/:workflowId/:stepId" element={<RuleEditor />} />  {/* ✅ correct */}
-
-        {/* ❌ REMOVE THIS LINE (causes white page) */}
-        {/* <Route path="/rules/:workflowId" element={<ruleEditor />} /> */}
-
+        <Route path="/rules/:workflowId/:stepId" element={<RuleEditor />} />
         <Route path="/audit-log" element={<AuditLog />} />
       </Routes>
     </BrowserRouter>
