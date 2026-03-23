@@ -22,30 +22,38 @@ function RuleEditor() {
   const loadSteps = async () => {
     try {
       const res = await axios.get(`${api}/workflows/${workflowId}/steps`);
+      console.log("steps response:", res.data);
       setSteps(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
-      console.log(error);
+      console.error("loadSteps error:", error);
       setMessage("Failed to load steps");
+      setSteps([]);
     }
   };
 
   const loadRules = async () => {
     try {
       const res = await axios.get(`${api}/steps/${stepId}/rules`);
+      console.log("rules response:", res.data);
       setRules(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
-      console.log(error);
+      console.error("loadRules error:", error);
       setMessage("Failed to load rules");
+      setRules([]);
     }
   };
 
   useEffect(() => {
-    if (workflowId && stepId) {
-      loadSteps();
-      loadRules();
-    } else {
+    console.log("workflowId:", workflowId);
+    console.log("stepId:", stepId);
+
+    if (!workflowId || !stepId) {
       setMessage("Workflow id or step id missing");
+      return;
     }
+
+    loadSteps();
+    loadRules();
   }, [workflowId, stepId]);
 
   const clearForm = () => {
@@ -87,7 +95,7 @@ function RuleEditor() {
       clearForm();
       await loadRules();
     } catch (error) {
-      console.log(error);
+      console.error("saveRule error:", error);
       setMessage(
         error?.response?.data?.message ||
           error?.response?.data?.error ||
@@ -99,13 +107,13 @@ function RuleEditor() {
   };
 
   const editRule = (rule) => {
-    setEditingId(rule._id || "");
-    setCondition(rule.condition || "");
-    setPriority(rule.priority || "");
+    setEditingId(rule?._id || "");
+    setCondition(rule?.condition || "");
+    setPriority(rule?.priority || "");
     setNextStepId(
-      typeof rule.next_step_id === "object"
-        ? rule.next_step_id?._id || ""
-        : rule.next_step_id || ""
+      typeof rule?.next_step_id === "object"
+        ? rule?.next_step_id?._id || ""
+        : rule?.next_step_id || ""
     );
   };
 
@@ -115,7 +123,7 @@ function RuleEditor() {
       setMessage("Rule deleted successfully");
       await loadRules();
     } catch (error) {
-      console.log(error);
+      console.error("deleteRule error:", error);
       setMessage("Failed to delete rule");
     }
   };
@@ -133,12 +141,14 @@ function RuleEditor() {
           </div>
         </section>
 
-        {message && <div className="message-box">{message}</div>}
+        <div className="message-box">
+          {message || `Workflow: ${workflowId || "-"} | Step: ${stepId || "-"}`}
+        </div>
 
         <div className="card" style={{ maxWidth: "900px", margin: "0 auto" }}>
           <div className="section-header">
             <h2>{editingId ? "Edit Rule" : "Add Rule"}</h2>
-            <span className="pill blue">{rules.length}</span>
+            <span className="pill blue">{Array.isArray(rules) ? rules.length : 0}</span>
           </div>
 
           <p className="muted" style={{ marginBottom: "10px" }}>
@@ -159,11 +169,12 @@ function RuleEditor() {
             onChange={(e) => setNextStepId(e.target.value)}
           >
             <option value="">End Workflow</option>
-            {steps.map((step) => (
-              <option key={step._id} value={step.step_id}>
-                {step.name}
-              </option>
-            ))}
+            {Array.isArray(steps) &&
+              steps.map((step, index) => (
+                <option key={step?._id || step?.step_id || index} value={step?.step_id || ""}>
+                  {step?.name || step?.step_id || "Unnamed Step"}
+                </option>
+              ))}
           </select>
 
           <label>Priority</label>
@@ -189,30 +200,27 @@ function RuleEditor() {
           </div>
 
           <div className="history-list" style={{ marginTop: "24px" }}>
-            {rules.length === 0 ? (
+            {!Array.isArray(rules) || rules.length === 0 ? (
               <p className="empty-text">No rules found.</p>
             ) : (
-              rules.map((rule) => (
-                <div key={rule._id} className="history-card">
+              rules.map((rule, index) => (
+                <div key={rule?._id || index} className="history-card">
                   <div className="history-top">
-                    <span className="history-id">Priority: {rule.priority}</span>
+                    <span className="history-id">Priority: {rule?.priority ?? "-"}</span>
                   </div>
 
                   <p className="muted">
-                    <strong>Condition:</strong> {rule.condition}
+                    <strong>Condition:</strong> {rule?.condition || "-"}
                   </p>
 
                   <p className="muted">
                     <strong>Next Step:</strong>{" "}
-                    {typeof rule.next_step_id === "object"
-                      ? rule.next_step_id?.name || "End Workflow"
-                      : rule.next_step_id || "End Workflow"}
+                    {typeof rule?.next_step_id === "object"
+                      ? rule?.next_step_id?.name || "End Workflow"
+                      : rule?.next_step_id || "End Workflow"}
                   </p>
 
-                  <div
-                    className="workflow-action-group"
-                    style={{ marginTop: "12px" }}
-                  >
+                  <div className="workflow-action-group" style={{ marginTop: "12px" }}>
                     <button
                       className="edit-btn workflow-action-btn"
                       onClick={() => editRule(rule)}
@@ -222,7 +230,7 @@ function RuleEditor() {
 
                     <button
                       className="delete-btn workflow-action-btn"
-                      onClick={() => deleteRule(rule._id)}
+                      onClick={() => deleteRule(rule?._id)}
                     >
                       Delete
                     </button>
