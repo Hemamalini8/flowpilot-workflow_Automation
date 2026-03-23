@@ -19,44 +19,32 @@ function RuleEditor() {
 
   const api = "https://flowpilot-workflow-automation.onrender.com/api";
 
-  // DEBUG
-  console.log("workflowId =", workflowId);
-  console.log("stepId =", stepId);
-  console.log("api =", api);
-
   const loadSteps = async () => {
     try {
-      console.log("LOAD STEPS URL =", `${api}/workflows/${workflowId}/steps`);
       const res = await axios.get(`${api}/workflows/${workflowId}/steps`);
-      console.log("LOAD STEPS RESPONSE =", res.data);
       setSteps(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
-      console.log("LOAD STEPS ERROR =", error);
-      console.log("LOAD STEPS ERROR DATA =", error?.response?.data);
+      console.error("LOAD STEPS ERROR:", error?.response?.data || error.message);
       setMessage("Failed to load steps");
     }
   };
 
   const loadRules = async () => {
     try {
-      console.log("LOAD RULES URL =", `${api}/steps/${stepId}/rules`);
       const res = await axios.get(`${api}/steps/${stepId}/rules`);
-      console.log("LOAD RULES RESPONSE =", res.data);
       setRules(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
-      console.log("LOAD RULES ERROR =", error);
-      console.log("LOAD RULES ERROR DATA =", error?.response?.data);
+      console.error("LOAD RULES ERROR:", error?.response?.data || error.message);
       setMessage("Failed to load rules");
     }
   };
 
   useEffect(() => {
-    console.log("useEffect running...");
     if (workflowId && stepId) {
       loadSteps();
       loadRules();
     } else {
-      setMessage("Workflow id or step id missing");
+      setMessage("Workflow ID or Step ID missing");
     }
   }, [workflowId, stepId]);
 
@@ -65,9 +53,20 @@ function RuleEditor() {
     setNextStepId("");
     setPriority("");
     setEditingId("");
+    setMessage("");
   };
 
   const saveRule = async () => {
+    if (!workflowId) {
+      setMessage("workflowId is required");
+      return;
+    }
+
+    if (!stepId) {
+      setMessage("stepId is required");
+      return;
+    }
+
     if (!condition.trim()) {
       setMessage("Condition is required");
       return;
@@ -83,19 +82,17 @@ function RuleEditor() {
       setMessage("");
 
       const payload = {
+        workflowId,
+        stepId,
         condition: condition.trim(),
         next_step_id: nextStepId || null,
         priority: Number(priority),
       };
 
-      console.log("SAVE RULE PAYLOAD =", payload);
-
       if (editingId) {
-        console.log("UPDATE RULE URL =", `${api}/rules/${editingId}`);
         await axios.put(`${api}/rules/${editingId}`, payload);
         setMessage("Rule updated successfully");
       } else {
-        console.log("CREATE RULE URL =", `${api}/steps/${stepId}/rules`);
         await axios.post(`${api}/steps/${stepId}/rules`, payload);
         setMessage("Rule created successfully");
       }
@@ -103,8 +100,7 @@ function RuleEditor() {
       clearForm();
       await loadRules();
     } catch (error) {
-      console.log("SAVE RULE ERROR =", error);
-      console.log("SAVE RULE ERROR DATA =", error?.response?.data);
+      console.error("SAVE RULE ERROR:", error?.response?.data || error.message);
       setMessage(
         error?.response?.data?.message ||
           error?.response?.data?.error ||
@@ -116,26 +112,24 @@ function RuleEditor() {
   };
 
   const editRule = (rule) => {
-    console.log("EDIT RULE =", rule);
     setEditingId(rule._id || "");
     setCondition(rule.condition || "");
-    setPriority(rule.priority || "");
+    setPriority(rule.priority ? String(rule.priority) : "");
     setNextStepId(
       typeof rule.next_step_id === "object"
-        ? rule.next_step_id?._id || ""
+        ? rule.next_step_id?.step_id || rule.next_step_id?._id || ""
         : rule.next_step_id || ""
     );
+    setMessage("");
   };
 
   const deleteRule = async (id) => {
     try {
-      console.log("DELETE RULE URL =", `${api}/rules/${id}`);
       await axios.delete(`${api}/rules/${id}`);
       setMessage("Rule deleted successfully");
       await loadRules();
     } catch (error) {
-      console.log("DELETE RULE ERROR =", error);
-      console.log("DELETE RULE ERROR DATA =", error?.response?.data);
+      console.error("DELETE RULE ERROR:", error?.response?.data || error.message);
       setMessage("Failed to delete rule");
     }
   };
@@ -172,7 +166,7 @@ function RuleEditor() {
           <label>Condition</label>
           <input
             type="text"
-            placeholder="Example: amount > 100 && country == 'US'"
+            placeholder="Example: amount > 1000"
             value={condition}
             onChange={(e) => setCondition(e.target.value)}
           />
@@ -183,11 +177,13 @@ function RuleEditor() {
             onChange={(e) => setNextStepId(e.target.value)}
           >
             <option value="">End Workflow</option>
-            {steps.map((step) => (
-              <option key={step._id} value={step.step_id}>
-                {step.name}
-              </option>
-            ))}
+            {steps
+              .filter((step) => step.step_id !== stepId)
+              .map((step) => (
+                <option key={step._id || step.step_id} value={step.step_id}>
+                  {step.name || step.step_id}
+                </option>
+              ))}
           </select>
 
           <label>Priority</label>
@@ -200,14 +196,26 @@ function RuleEditor() {
 
           <div className="button-group" style={{ marginTop: "16px" }}>
             <button className="start-btn" onClick={saveRule} disabled={loading}>
-              {loading ? "Processing..." : editingId ? "Update Rule" : "Create Rule"}
+              {loading
+                ? "Processing..."
+                : editingId
+                ? "Update Rule"
+                : "Create Rule"}
             </button>
 
-            <button className="edit-btn workflow-action-btn" onClick={clearForm}>
+            <button
+              className="edit-btn workflow-action-btn"
+              onClick={clearForm}
+              type="button"
+            >
               Clear
             </button>
 
-            <button className="reject-btn" onClick={() => navigate(-1)}>
+            <button
+              className="reject-btn"
+              onClick={() => navigate(-1)}
+              type="button"
+            >
               Back
             </button>
           </div>
@@ -229,7 +237,9 @@ function RuleEditor() {
                   <p className="muted">
                     <strong>Next Step:</strong>{" "}
                     {typeof rule.next_step_id === "object"
-                      ? rule.next_step_id?.name || "End Workflow"
+                      ? rule.next_step_id?.name ||
+                        rule.next_step_id?.step_id ||
+                        "End Workflow"
                       : rule.next_step_id || "End Workflow"}
                   </p>
 
