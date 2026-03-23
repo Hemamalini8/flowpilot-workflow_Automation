@@ -6,7 +6,7 @@ import WorkflowList from "./pages/WorkflowList";
 import WorkflowEditor from "./pages/WorkflowEditor";
 import StepManager from "./pages/StepManager";
 import RuleEditor from "./pages/RuleEditor";
-import AuditLog from "./pages/AuditLog";
+import AuditLog from "./pages/auditLog";
 
 function App() {
   return (
