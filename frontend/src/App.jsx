@@ -20,7 +20,7 @@ function App() {
         <Route path="/workflow-editor/:id" element={<WorkflowEditor />} />
         <Route path="/steps/:workflowId" element={<StepManager />} />
         <Route path="/rules/:workflowId/:stepId" element={<RuleEditor />} />
-        {/* <Route path="/rules/:workflowId" element={<ruleEditor />} /> */}
+        <Route path="/rules/:workflowId" element={<ruleEditor />} />
         <Route path="/audit-log" element={<AuditLog />} />
       </Routes>
     </BrowserRouter>
