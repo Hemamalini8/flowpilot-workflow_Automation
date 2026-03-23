@@ -17,7 +17,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/workflows" element={<WorkflowList />} />
         <Route path="/workflow-editor" element={<WorkflowEditor />} />
-        <Route path="/workflow-editor/:id" element={<WorkflowEditor />} />
+        <Route path="/workflow-editor/:id" element={<workflowEditor />} />
         <Route path="/steps/:workflowId" element={<StepManager />} />
         <Route path="/rules/:workflowId/:stepId" element={<RuleEditor />} />
         <Route path="/rules/:workflowId" element={<ruleEditor />} />
