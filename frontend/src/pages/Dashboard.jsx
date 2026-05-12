@@ -390,7 +390,7 @@ function Dashboard() {
                     </div>
 
                     <div className="detail-box">
-                      <span className="detail-label">Amount</span>
+                      <span className="detail-label">Request Value</span>
                       <span className="detail-value">{execution.data?.amount ?? "-"}</span>
                     </div>
 
