@@ -307,10 +307,10 @@ function Dashboard() {
                 ))}
               </select>
 
-              <label>Amount *</label>
+              <label>Request Value*</label>
               <input
                 type="number"
-                placeholder="Enter amount"
+                placeholder="Enter Request Value"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
               />
