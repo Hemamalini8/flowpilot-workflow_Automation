@@ -18,7 +18,9 @@ function Dashboard() {
   const [loading, setLoading] = useState(false);
 
   const api = "https://flowpilot-workflow-automation.onrender.com/api";
-
+  const showNotification = (text) => {
+    alert(`Notification: ${text}`);
+  };
   const getStatusClass = (status) => {
     if (status === "completed") return "status completed";
     if (status === "rejected") return "status rejected";
@@ -46,18 +48,30 @@ function Dashboard() {
 
     const workflow = getWorkflowById(exec.workflow);
 
-    if (!workflow || !Array.isArray(workflow.steps) || workflow.steps.length === 0) {
+    if (
+      !workflow ||
+      !Array.isArray(workflow.steps) ||
+      workflow.steps.length === 0
+    ) {
       return exec.currentStep || "No steps";
     }
 
     const currentStep = workflow.steps.find((step, index) => {
       const stepId =
-        step?.step_id || step?.id || step?._id?.toString() || `step${index + 1}`;
+        step?.step_id ||
+        step?.id ||
+        step?._id?.toString() ||
+        `step${index + 1}`;
       return String(stepId) === String(exec.currentStep);
     });
 
     if (currentStep) {
-      return currentStep.name || currentStep.step_id || currentStep.id || exec.currentStep;
+      return (
+        currentStep.name ||
+        currentStep.step_id ||
+        currentStep.id ||
+        exec.currentStep
+      );
     }
 
     return exec.currentStep || "No steps";
@@ -89,7 +103,7 @@ function Dashboard() {
           if (!prev) return executionData[0];
 
           const updatedSelected = executionData.find(
-            (item) => String(item._id) === String(prev._id)
+            (item) => String(item._id) === String(prev._id),
           );
 
           return updatedSelected || executionData[0];
@@ -135,6 +149,7 @@ function Dashboard() {
       });
 
       setExecution(res.data.execution);
+      showNotification("Workflow execution started successfully");
       setMessage("Workflow started successfully");
       await loadExecutions();
     } catch (error) {
@@ -156,6 +171,7 @@ function Dashboard() {
       });
 
       setExecution(res.data.execution);
+      showNotification("Step approved successfully");
       setMessage(res.data.message || "Step approved");
       await loadExecutions();
     } catch (error) {
@@ -177,6 +193,7 @@ function Dashboard() {
       });
 
       setExecution(res.data.execution);
+      showNotification("Step rejected");
       setMessage(res.data.message || "Step rejected");
       await loadExecutions();
     } catch (error) {
@@ -195,6 +212,7 @@ function Dashboard() {
 
       const res = await axios.post(`${api}/executions/${execution._id}/retry`);
       setExecution(res.data.execution);
+      showNotification("Workflow retried");
       setMessage(res.data.message || "Execution retried");
       await loadExecutions();
     } catch (error) {
@@ -213,11 +231,14 @@ function Dashboard() {
 
       const res = await axios.post(`${api}/executions/${execution._id}/cancel`);
       setExecution(res.data.execution);
+      showNotification("Workflow canceled");
       setMessage(res.data.message || "Execution canceled");
       await loadExecutions();
     } catch (error) {
       console.log("Error canceling execution:", error);
-      setMessage(error?.response?.data?.message || "Failed to cancel execution");
+      setMessage(
+        error?.response?.data?.message || "Failed to cancel execution",
+      );
     } finally {
       setLoading(false);
     }
@@ -240,11 +261,13 @@ function Dashboard() {
         <section className="hero">
           <div className="hero-left">
             <p className="mini-title">Workflow Control Center</p>
-            <h1>Track, approve, and manage workflow executions from one place.</h1>
+            <h1>
+              Track, approve, and manage workflow executions from one place.
+            </h1>
             <p className="hero-text">
-              Rule-based workflow progression is automatically handled based on input
-              conditions. Start new workflows, monitor execution progress, review logs,
-              and manage audit data through one clean dashboard.
+              Rule-based workflow progression is automatically handled based on
+              input conditions. Start new workflows, monitor execution progress,
+              review logs, and manage audit data through one clean dashboard.
             </p>
             <button className="refresh-btn" onClick={refreshAll}>
               Refresh Data
@@ -263,7 +286,9 @@ function Dashboard() {
             </div>
 
             <div className="stat-card">
-              <h3>{executions.filter((e) => e.status === "in_progress").length}</h3>
+              <h3>
+                {executions.filter((e) => e.status === "in_progress").length}
+              </h3>
               <p>Active Runs</p>
             </div>
           </div>
@@ -357,7 +382,9 @@ function Dashboard() {
                 <h2>Execution Details</h2>
                 {execution && (
                   <span className={getStatusClass(execution.status)}>
-                    {execution.status === "in_progress" ? "In progress" : execution.status}
+                    {execution.status === "in_progress"
+                      ? "In progress"
+                      : execution.status}
                   </span>
                 )}
               </div>
@@ -376,37 +403,51 @@ function Dashboard() {
 
                     <div className="detail-box">
                       <span className="detail-label">Current Step</span>
-                      <span className="detail-value">{getCurrentStepName(execution)}</span>
+                      <span className="detail-value">
+                        {getCurrentStepName(execution)}
+                      </span>
                     </div>
 
                     <div className="detail-box">
                       <span className="detail-label">Workflow Version</span>
-                      <span className="detail-value">{execution.workflow_version ?? "-"}</span>
+                      <span className="detail-value">
+                        {execution.workflow_version ?? "-"}
+                      </span>
                     </div>
 
                     <div className="detail-box">
                       <span className="detail-label">Retries</span>
-                      <span className="detail-value">{execution.retries ?? 0}</span>
+                      <span className="detail-value">
+                        {execution.retries ?? 0}
+                      </span>
                     </div>
 
                     <div className="detail-box">
                       <span className="detail-label">Request Value</span>
-                      <span className="detail-value">{execution.data?.amount ?? "-"}</span>
+                      <span className="detail-value">
+                        {execution.data?.amount ?? "-"}
+                      </span>
                     </div>
 
                     <div className="detail-box">
                       <span className="detail-label">Country</span>
-                      <span className="detail-value">{execution.data?.country || "-"}</span>
+                      <span className="detail-value">
+                        {execution.data?.country || "-"}
+                      </span>
                     </div>
 
                     <div className="detail-box">
                       <span className="detail-label">Department</span>
-                      <span className="detail-value">{execution.data?.department || "-"}</span>
+                      <span className="detail-value">
+                        {execution.data?.department || "-"}
+                      </span>
                     </div>
 
                     <div className="detail-box">
                       <span className="detail-label">Priority</span>
-                      <span className="detail-value">{execution.data?.priority || "-"}</span>
+                      <span className="detail-value">
+                        {execution.data?.priority || "-"}
+                      </span>
                     </div>
                   </div>
 
@@ -452,7 +493,9 @@ function Dashboard() {
                         {execution.logs.map((log, i) => (
                           <li key={i}>
                             {log.message}
-                            {log.timestamp ? ` - ${new Date(log.timestamp).toLocaleString()}` : ""}
+                            {log.timestamp
+                              ? ` - ${new Date(log.timestamp).toLocaleString()}`
+                              : ""}
                           </li>
                         ))}
                       </ul>
@@ -485,12 +528,15 @@ function Dashboard() {
                       <div className="history-top">
                         <span className="history-id">{item._id}</span>
                         <span className={getStatusClass(item.status)}>
-                          {item.status === "in_progress" ? "In progress" : item.status}
+                          {item.status === "in_progress"
+                            ? "In progress"
+                            : item.status}
                         </span>
                       </div>
 
                       <p className="muted">
-                        <strong>Current Step:</strong> {getCurrentStepName(item)}
+                        <strong>Current Step:</strong>{" "}
+                        {getCurrentStepName(item)}
                       </p>
                       <p className="muted">
                         <strong>Priority:</strong> {item.data?.priority || "-"}
