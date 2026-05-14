@@ -166,7 +166,7 @@ function RuleEditor() {
           <label>Condition</label>
           <input
             type="text"
-            placeholder="Example: amount > 1000"
+            placeholder="Type condition"
             value={condition}
             onChange={(e) => setCondition(e.target.value)}
           />

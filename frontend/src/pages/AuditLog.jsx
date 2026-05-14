@@ -5,6 +5,7 @@ import "../styles/Components.css";
 
 function AuditLog() {
   const [executions, setExecutions] = useState([]);
+  const [workflows, setWorkflows] = useState([]);
   const [message, setMessage] = useState("");
 
   const api = "https://flowpilot-workflow-automation.onrender.com/api";
@@ -20,13 +21,24 @@ function AuditLog() {
     }
   };
 
+  const loadWorkflows = async () => {
+    try {
+      const res = await axios.get(`${api}/workflows`);
+      setWorkflows(Array.isArray(res.data) ? res.data : []);
+    } catch (error) {
+      console.log("Error loading workflows:", error);
+    }
+  };
+
   useEffect(() => {
+    loadWorkflows();
     loadExecutions();
   }, []);
 
   const getStatusClass = (status) => {
     if (status === "completed") return "status completed";
     if (status === "rejected") return "status rejected";
+    if (status === "canceled") return "status rejected";
     return "status progress";
   };
 
@@ -34,13 +46,21 @@ function AuditLog() {
     if (exec?.workflow && typeof exec.workflow === "object") {
       return exec.workflow.name || "-";
     }
-    return "Loan Approval";
+
+    const workflowId = exec?.workflow || exec?.workflow_id || exec?.workflowId;
+
+    const matchedWorkflow = workflows.find(
+      (workflow) => String(workflow._id) === String(workflowId)
+    );
+
+    return matchedWorkflow?.name || "-";
   };
 
   const getCurrentStepName = (exec) => {
     if (!exec) return "-";
     if (exec.status === "completed") return "Completed";
     if (exec.status === "rejected") return "Rejected";
+    if (exec.status === "canceled") return "Canceled";
     return exec.currentStep || "-";
   };
 
@@ -80,7 +100,7 @@ function AuditLog() {
                   <th>Status</th>
                   <th>Workflow</th>
                   <th>Current Step</th>
-                  <th>Amount</th>
+                  <th>Value</th>
                   <th>Country</th>
                   <th>Priority</th>
                 </tr>
